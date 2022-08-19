@@ -6,9 +6,10 @@ import imutils
 
 HEADLESS = False
 
+CAM_RES_W = 400
+
 from yunet import YuNet
 model = YuNet(modelPath="face_detection_yunet_2022mar.onnx",
-                  inputSize=[320, 320],
                   confThreshold=0.9,
                   nmsThreshold=0.3,
                   topK=5000,
@@ -22,20 +23,22 @@ interpreter.allocate_tensors()
 
 
 
-camera = cv2.VideoCapture(2)
+camera = cv2.VideoCapture(0, cv2.CAP_V4L2)
 
-#camera.set(cv2.CAP_PROP_FRAME_WIDTH, 426)
-#camera.set(cv2.CAP_PROP_FRAME_HEIGHT, 240)
+camera.set(cv2.CAP_PROP_FRAME_WIDTH, CAM_RES_W)
+camera.set(cv2.CAP_PROP_FRAME_HEIGHT, 240)
 
 w = int(camera.get(cv2.CAP_PROP_FRAME_WIDTH))
 h = int(camera.get(cv2.CAP_PROP_FRAME_HEIGHT))
-model.setInputSize([w, h])
+
+print("Using Width: {w}px and Height {h}px".format(w = w, h = h))
+model.setInputSize([400, 225])
 last_frame = time.time()
 while True:
     # grab the current frame
     (grabbed, frame) = camera.read()
     
-    #frame = imutils.resize(frame, width=900)
+    frame = imutils.resize(frame, width=CAM_RES_W)
     
     frameClone = frame.copy()
 
