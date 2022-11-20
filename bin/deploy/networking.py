@@ -24,8 +24,10 @@ ERR = "ERR".encode("ascii")
 YES = "YES".encode("ascii")
 NO = "NO".encode("ascii")
 EOT = "EOT".encode("ascii")
+HEARTBEAT = "PULSE"
 CMD_PREFIX = "CMD"
 NFY_PREFIX = "NFY"
+
 class Event:
     def __init__(self, id, sender):
         self.id = id
@@ -56,7 +58,10 @@ def _is_notification(id):
 class RadioOperator:
     EVENTS = []
     OUTBOUND = []
+    PEERS = {}
 
+    THREADLIST = ["TRANSCEIVER", "AGENT", "HEART"]
+    THREADS = {}
 
     def _get_MultiCastSocket(self):
         try:
@@ -84,8 +89,8 @@ class RadioOperator:
                 logger.debug("Sending \"{msg}\" to MultiCast.".format(msg = send.decode("ascii")))
                 sock.sendto(send, MULTICAST)
             else:
-                received = sock.recv(BUFFER_SIZE)
-                logger.debug("Received \"{msg}\" from MultiCast.".format(msg = received.decode("ascii")))
+                received = sock.recvfrom(BUFFER_SIZE)
+                logger.debug("Received \"{msg}\" from MultiCast.".format(msg = received[0].decode("ascii")))
             success = True
         except OSError as e:
             if(e.args[0] == 101):
@@ -123,9 +128,11 @@ class RadioOperator:
                 for sock_read in ready_to_read:
                     success, received = self._operate_MultiCastSocket(sock_read, send = False)
                     if(success):
-                        msg = received.decode("ascii")
+                        msg = received[0].decode("ascii")
                         info = msg.split(DELIMITER)
                         sender = info[0]
+                        sender_ip = received[1][0]
+                        self.PEERS[sender] = sender_ip
                         id = info[1]
                         if(_is_event(id)):
                             # New Event #
@@ -183,6 +190,9 @@ class RadioOperator:
         if(num_event_diff > 0):
             logger.debug("Cleaned up {n} event(s) from queue.".format(n = num_event_diff))
 
+    def Heart(self):
+        notify(HEARTBEAT)
+        time.sleep(EVENT_LIFETIME)
 
     def Agent(self):
         logger.debug("Trying to setup TCPSocket.")
@@ -231,6 +241,8 @@ class RadioOperator:
                             connection.sendall(rmsg)
                         if(header == "LIST"):
                             connection.sendall(_encode_obj(self._get_notifications()))
+                        if(header == "PEERS"):
+                            connection.sendall(_encode_obj(self.PEERS))
 
                         connection.sendall(EOT)
         except Exception as e:
@@ -241,29 +253,24 @@ class RadioOperator:
     def Watcher(self):
         while(True):
             time.sleep(QUEUE_PAUSE)
-            if(not self.transceiver_thread.is_alive()):
-                logger.warning("Transceiver died. Restarting ...")
-                self.transceiver_thread = self._setup_threads("TRANSCEIVER")
-                self.transceiver_thread.start()
-                logger.debug("Transceiver restarted. Sleeping {w} s".format(w = WAIT_BEFORE_RETRY))
-                time.sleep(WAIT_BEFORE_RETRY)
-            if(not self.agent_thread.is_alive()):
-                logger.warning("Agent died. Restarting ...")
-                self.agent_thread = self._setup_threads("AGENT")
-                self.agent_thread.start()
-                logger.debug("Agent restarted. Sleeping {w} s".format(w = WAIT_BEFORE_RETRY))
-                time.sleep(WAIT_BEFORE_RETRY)
+            for thread in self.THREADS:
+                if(not self.THREADS[thread].is_alive()):
+                    logger.warning("{thread} died. Restarting ...".format(thread = thread))
+                    self.transceiver_thread = self._setup_threads(thread)
+                    self.transceiver_thread.start()
+                    logger.debug("{thread} restarted. Sleeping {w} s".format(w = WAIT_BEFORE_RETRY, thread = thread))
+                    time.sleep(WAIT_BEFORE_RETRY)                 
+
 
     def _setup_threads(self, which):
         if(which == "AGENT"):
             return threading.Thread(target=self.Agent, args=())
         elif(which == "TRANSCEIVER"):
             return threading.Thread(target=self.Transceiver, args=())
+        elif(which == "HEART"):
+            return threading.Thread(target=self.Heart, args=())
         else:
-            raise ValueError("Unknown thread name. Possible names: AGENT, TRANSCEIVER")
-
-
-
+            raise ValueError("Unknown thread name. Possible names: HEART, AGENT, TRANSCEIVER")
 
     def _build_transmit(self, message):
         transmit = DELIMITER.join([self.address, message]).encode("ascii")
@@ -272,13 +279,15 @@ class RadioOperator:
     def __init__(self):
         self.address = str(uuid.uuid4())
         self.RUN = True
-        self.transceiver_thread = self._setup_threads("TRANSCEIVER")
-        self.agent_thread = self._setup_threads("AGENT")
         self.EVENTS_LOCK = threading.Lock()
-        logger.info("Starting MultiCast Transceiver.")
-        self.transceiver_thread.start()
-        logger.info("Starting Agent.")
-        self.agent_thread.start()
+
+        for thread in self.THREADLIST:
+            self.THREADS[thread] = self._setup_threads(thread)
+        
+        for thread in self.THREADS:
+            logger.info("Starting {thread}.".format(thread = thread))
+            self.THREADS[thread].start()
+
         logger.info("Starting Watcher.")
         watcher = threading.Thread(target=self.Watcher, args=())
         watcher.start()
@@ -335,7 +344,9 @@ def get_notifications():
     response = _send_bytes("LIST".encode("ascii"))
     return _decode_obj(response)
 
-
+def get_peers():
+    response = _send_bytes("PEERS".encode("ascii"))
+    return _decode_obj(response)
 
 def check_command(event):
     _check_validity(event)
@@ -362,4 +373,4 @@ if __name__ == "__main__":
     for evt in get_notifications():
         print("{evt} from {snd} at {birth}".format(evt = evt.id, snd = evt.sender, birth = evt.birth))
     check_command("AGENTCRASH")
-    
+    print(get_peers())
