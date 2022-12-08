@@ -191,8 +191,9 @@ class RadioOperator:
             logger.debug("Cleaned up {n} event(s) from queue.".format(n = num_event_diff))
 
     def Heart(self):
-        notify(HEARTBEAT)
-        time.sleep(EVENT_LIFETIME)
+        while(True):
+            notify(HEARTBEAT)
+            time.sleep(EVENT_LIFETIME)
 
     def Agent(self):
         logger.debug("Trying to setup TCPSocket.")
@@ -293,23 +294,26 @@ class RadioOperator:
         watcher.start()
 
 def _send_bytes(bytes):
-    if(len(bytes) > BUFFER_SIZE):
-        raise ValueError("Argument \"bytes\" may not be bigger than the set BUFFER_SIZE ({bs})".format(
-            bs = BUFFER_SIZE
-        ))
     try:
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.connect(("127.0.0.1", TCP_PORT))
-            s.sendall(bytes)
-            response = s.recv(BUFFER_SIZE)
-            while(response[-3:] != EOT):
-                response += s.recv(BUFFER_SIZE)
-            response = response[:-3]
-    except ConnectionRefusedError:
-        logger.warning("Connection to TCPSocket refused")
-        response = False
-
-    return response
+        if(len(bytes) > BUFFER_SIZE):
+            raise ValueError("Argument \"bytes\" may not be bigger than the set BUFFER_SIZE ({bs})".format(
+                bs = BUFFER_SIZE
+            ))
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.connect(("127.0.0.1", TCP_PORT))
+                s.sendall(bytes)
+                response = s.recv(BUFFER_SIZE)
+                while(response[-3:] != EOT):
+                    response += s.recv(BUFFER_SIZE)
+                response = response[:-3]
+        except ConnectionRefusedError:
+            logger.warning("Connection to TCPSocket refused")
+            response = False
+        return response
+    except Exception as e:
+        logger.error("Failed to send bytes: " + str(e))
+        return None
 
 def _check_validity(name):
     if(len(name) > MAX_NAME_LEN):
@@ -348,7 +352,7 @@ def get_peers():
     response = _send_bytes("PEERS".encode("ascii"))
     return _decode_obj(response)
 
-def check_command(event):
+def get_command(event):
     _check_validity(event)
     msg = "CHK" + DELIMITER + event.upper()
     response = _send_bytes(msg.encode("ascii"))
@@ -357,20 +361,19 @@ def check_command(event):
     elif(response == NO):
         return False
     else:
-        raise ValueError("Got unexpected response \"{r}\"".format(response.decode("ascii")))
+        if(hasattr(response, "decode")):
+            raise ValueError("Got unexpected response \"{r}\"".format(response.decode("ascii")))
+        else:
+            return response
 if __name__ == "__main__":
     RadioOperator()
-    time.sleep(2)
-    command("AGENTCRASH")
-    time.sleep(0.02)
-    print(check_command("AGENTCRASH"))
-    time.sleep(1)
-    notify("SMILETRIGGER")
-    notify("TEST")
-    notify("TEST2")
-    notify("TEST")
-    time.sleep(1)
-    for evt in get_notifications():
-        print("{evt} from {snd} at {birth}".format(evt = evt.id, snd = evt.sender, birth = evt.birth))
-    check_command("AGENTCRASH")
-    print(get_peers())
+    while(True):
+        match input().split():
+            case ["command", cmd]:
+                command(cmd)
+            case ["notify", nfy]:
+                notify(nfy)    
+            case ["break"]:
+                break
+            case _:
+                print("Unknown input.")
