@@ -3,7 +3,7 @@
 
 
 # Send files to pi
-rsync -av --delete ../deploy pi@$RASPI:photobox/
+rsync -av --delete deploy pi@$RASPI:photobox/
 
 ssh -t -t "pi@$RASPI" "\
     export DISPLAY=:0;

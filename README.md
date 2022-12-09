@@ -8,3 +8,10 @@ For face detection I use YuNet from https://github.com/opencv/opencv_zoo. It wor
 Work is still in progress and I have not cleaned up my code in a while, but I'll get to that eventually.
 
 Timo :)
+
+
+In case you are serious about installing this piece of software, here are a couple of things you might want to install:
+
+cv2 (duh)
+tflite_runtime
+unclutter (for removing the cursor, put that into your crontab)

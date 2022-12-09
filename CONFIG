@@ -1,0 +1,13 @@
+[Basic]
+name = LAPTOP
+deployment = no
+
+[Slideshow]
+enabled = yes
+imagepath = /home/timo/Pictures/
+screentime = 5
+fps = 30
+transition_speed = 1.0
+screen_width = 1920
+screen_height = 1080
+
