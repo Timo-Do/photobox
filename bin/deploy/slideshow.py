@@ -10,6 +10,8 @@ import networking
 import time
 import threading
 
+os.environ["DISPLAY"] = ":0.0"
+
 logger = assets.tools.get_logger("SLIDESHOW")
 config = assets.config.load()
 DIR = os.path.dirname(os.path.realpath(sys.argv[0]))
@@ -23,13 +25,13 @@ class Slideshow():
     # SCREEN_WIDTH = 1920
     # SCREEN_HEIGHT = 1080
     IMAGE_PATH = os.path.join(config["Slideshow"]["ImagePath"], "*.JPG")
-    SCREEN_TIME = int(config["Slideshow"]["ScreenTime"] * 1000)
+    SCREEN_TIME = int(config["Slideshow"]["ScreenTime"])
     FPS = config["Slideshow"]["FPS"]
     TRANSITION_SPEED = config["Slideshow"]["TRANSITION_SPEED"] / 50
     SCREEN_WIDTH = config["Slideshow"]["SCREEN_WIDTH"]
     SCREEN_HEIGHT = config["Slideshow"]["SCREEN_HEIGHT"]
 
-    DEFAULT_IMAGE = os.path.join(DIR, "assets", "DEFAULT.png")
+    DEFAULT_IMAGES = os.path.join(DIR, "assets", "SCREENSAVER")
     SCREEN_RATIO = SCREEN_WIDTH / SCREEN_HEIGHT
     SCREEN_NAME = "Slideshow"
     
@@ -69,38 +71,46 @@ class Slideshow():
             current_alpha += self.TRANSITION_SPEED
             cv2.imshow(self.SCREEN_NAME, transition_image)
             cv2.waitKey(int(1000/self.FPS))
+        tshown = 0
         self.current_image = next_image
-        if(self.running):
-            cv2.imshow(self.SCREEN_NAME, self.current_image)
-            cv2.waitKey(self.SCREEN_TIME)
+        cv2.imshow(self.SCREEN_NAME, self.current_image)
+        cv2.waitKey(1)
+        while(tshown < self.SCREEN_TIME and self.running):
+            time.sleep(REACTION_TIME)
+            tshown += REACTION_TIME
+
+    def set_new_default(self):
+        screensaver = random.choice(os.listdir(self.DEFAULT_IMAGES))
+        self.default = self.load_image(os.path.join(self.DEFAULT_IMAGES, screensaver))
 
     def display_default(self):
-        default = self.load_image(self.DEFAULT_IMAGE)
-        cv2.imshow(self.SCREEN_NAME, default)
-        self.current_image = default
+        cv2.imshow(self.SCREEN_NAME, self.default)
+        self.current_image = self.default
         cv2.waitKey(1)
 
     def Watcher(self):
         while(True):
             if(networking.get_command("TOGGLESCREEN")):
                 logger.debug("New TOGGLESCREEN command received.")
-                self.running = not self.running
-                if(not self.running):
+                if(self.running):
+                    self.set_new_default()
                     logger.debug("Switching off display")
                 else:
                     logger.debug("Switching on display")
+                self.running = not self.running
             time.sleep(REACTION_TIME)
 
     def __init__(self):
         logger.info("Starting up.")
         logger.debug("Initializing window.")
-        cv2.namedWindow(self.SCREEN_NAME)
+        cv2.namedWindow(self.SCREEN_NAME, cv2.WND_PROP_FULLSCREEN)
         cv2.setWindowProperty(self.SCREEN_NAME,cv2.WND_PROP_FULLSCREEN,cv2.WINDOW_FULLSCREEN)
         logger.debug("Loading image list.")
         self.images = self.get_image_list()
         logger.debug("Starting up Screensaver.")
+        self.set_new_default()
         self.display_default()
-        cv2.waitKey(self.SCREEN_TIME)
+        time.sleep(self.SCREEN_TIME)
         logger.debug("Starting up Watcher.")
         watcher_thread = threading.Thread(target=self.Watcher, args=())
         watcher_thread.start()
@@ -121,7 +131,10 @@ class Slideshow():
                     logger.debug("Loading new set of images.")
                     self.index = 0
                     self.get_image_list()
-                logger.debug("Displaying image #{i}".format(i = self.index))
-                self.next_image(self.image_list[self.index])
+                if(len(self.image_list) > 0):
+                    logger.debug("Displaying image #{i}".format(i = self.index))
+                    self.next_image(self.image_list[self.index])
+                else:
+                    time.sleep(REACTION_TIME)
 
 Slideshow()

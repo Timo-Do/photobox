@@ -1,11 +1,11 @@
 import configparser
 import os
-import tools
+from assets import tools
 import shutil
 
 logger = tools.get_logger("CONFIG")
 
-PATH = "/home/timo/Projects/photobox/CONFIG"
+PATH = os.environ["CONFIG"]
 
 bool2str = {
     True  : "yes",

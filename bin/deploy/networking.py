@@ -367,13 +367,13 @@ def get_command(event):
             return response
 if __name__ == "__main__":
     RadioOperator()
-    while(True):
-        match input().split():
-            case ["command", cmd]:
-                command(cmd)
-            case ["notify", nfy]:
-                notify(nfy)    
-            case ["break"]:
-                break
-            case _:
-                print("Unknown input.")
+    # while(True):
+    #     match input().split():
+    #         case ["command", cmd]:
+    #             command(cmd)
+    #         case ["notify", nfy]:
+    #             notify(nfy)    
+    #         case ["break"]:
+    #             break
+    #         case _:
+    #             print("Unknown input.")
