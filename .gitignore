@@ -133,5 +133,7 @@ data
 docs
 paperspace
 passwords
+bin/deploy/assets/SCREENSAVER/
+
 
 .vscode
