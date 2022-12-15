@@ -37,7 +37,7 @@ class Slideshow():
     
     index = 0
     running = True
-    bTransit = False # Tripwire so first screensaver is always instant
+    bSkipTransit = False # Tripwire so first screensaver is always instant
 
     def load_image(self, src):
         img = cv2.imread(src)
@@ -63,25 +63,31 @@ class Slideshow():
             self.image_list.insert(self.index + idx + 1, new_image)
 
     def next_image(self, image, transition = True):
+        # If no image is provided (image = None)
+        # then the screensaver mode is enabled (=> normal = False)
+        normal = True
         if(image is None):
             default = random.choice(os.listdir(self.DEFAULT_IMAGES))
             image = os.path.join(self.DEFAULT_IMAGES, default)
-
+            normal = self.running
         next_image = self.load_image(image)
-        if(transition):
+        if(transition and not self.bSkipTransit):
             current_alpha = 0
-            while(current_alpha < 1 and self.running):
+            while(current_alpha < 1 and (self.running == normal)):
                 transition_image = cv2.addWeighted(
                     self.current_image, 1 - current_alpha,
                     next_image, current_alpha, 0)
                 current_alpha += self.TRANSITION_SPEED
                 cv2.imshow(self.SCREEN_NAME, transition_image)
                 cv2.waitKey(int(1000/self.FPS))
+        elif(self.bSkipTransit):
+            self.bSkipTransit = False
+        if((self.running == normal)):
+            self.current_image = next_image
+            cv2.imshow(self.SCREEN_NAME, self.current_image)
+            cv2.waitKey(1)
         tshown = 0
-        self.current_image = next_image
-        cv2.imshow(self.SCREEN_NAME, self.current_image)
-        cv2.waitKey(1)
-        while(tshown < self.SCREEN_TIME and self.running):
+        while(tshown < self.SCREEN_TIME and (self.running == normal)):
             time.sleep(REACTION_TIME)
             tshown += REACTION_TIME
 
@@ -94,9 +100,9 @@ class Slideshow():
                 logger.debug("New TOGGLESCREEN command received.")
                 if(self.running):
                     logger.debug("Switching off display")
-                    self.bTransit = False
                 else:
                     logger.debug("Switching on display")
+                self.bSkipTransit = True
                 self.running = not self.running
             time.sleep(REACTION_TIME)
 
@@ -118,14 +124,15 @@ class Slideshow():
         logger.info("Starting main loop.")
         while(True):
             if(self.running):
+                # Normal mode
                 logger.debug("Updating image list.")
                 self.update_image_list()
-                if(not self.index < len(self.image_list)):
+                if(not self.index + 1 < len(self.image_list)):
                     # All images have been shown
                     logger.debug("Loading new set of images.")
                     self.index = 0
                     self.get_image_list()
-                if(self.index < len(self.image_list)):
+                if(self.index  + 1 < len(self.image_list)):
                     # There is at least one picture available for showing.
                     self.index += 1
                     logger.debug("Displaying image #{i}".format(i = self.index))
@@ -134,8 +141,8 @@ class Slideshow():
                     logger.debug("No pictures available, showing default")
                     self.next_image(None)
             else:
-                self.next_image(None, transition = self.bTransit)
-                if(not self.bTransit): self.bTransit = True
+                self.next_image(None)
+                
 
  
 
