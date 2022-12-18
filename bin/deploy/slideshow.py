@@ -25,12 +25,12 @@ class Slideshow():
     # SCREEN_WIDTH = 1920
     # SCREEN_HEIGHT = 1080
     IMAGE_PATH = os.path.join(config["Slideshow"]["ImagePath"], "*.JPG")
-    SCREEN_TIME = int(config["Slideshow"]["ScreenTime"])
+    SCREEN_TIME = config["Slideshow"]["Screen_Time"]
+    TRANSIT_TIME = config["Slideshow"]["Transit_Time"]
     FPS = config["Slideshow"]["FPS"]
-    TRANSITION_SPEED = config["Slideshow"]["TRANSITION_SPEED"] / 150
     SCREEN_WIDTH = config["Slideshow"]["SCREEN_WIDTH"]
     SCREEN_HEIGHT = config["Slideshow"]["SCREEN_HEIGHT"]
-
+    TRANSIT_SPEED = 1 / (TRANSIT_TIME * FPS)
     DEFAULT_IMAGES = os.path.join(DIR, "assets", "SCREENSAVER")
     SCREEN_RATIO = SCREEN_WIDTH / SCREEN_HEIGHT
     SCREEN_NAME = "Slideshow"
@@ -71,11 +71,12 @@ class Slideshow():
         next_image = self.load_image(image)
         if(self.current_image is not None):
             current_alpha = 0
+            transit_start = self.current_image
             while(current_alpha < 1 and (self.running != screensaver)):
                 transition_image = cv2.addWeighted(
-                    self.current_image, 1 - current_alpha,
+                    transit_start, 1 - current_alpha,
                     next_image, current_alpha, 0)
-                current_alpha += self.TRANSITION_SPEED
+                current_alpha += self.TRANSIT_SPEED
                 self.current_image = transition_image
                 cv2.imshow(self.SCREEN_NAME, transition_image)
                 cv2.waitKey(int(1000/self.FPS))

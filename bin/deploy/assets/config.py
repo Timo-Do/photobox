@@ -27,9 +27,9 @@ config["Basic"]["Deployment"] = bool
 config["Slideshow"] = {}
 config["Slideshow"]["Enabled"] = bool
 config["Slideshow"]["ImagePath"] = str
-config["Slideshow"]["ScreenTime"] = float
+config["Slideshow"]["Screen_Time"] = float
 config["Slideshow"]["FPS"] = int
-config["Slideshow"]["TRANSITION_SPEED"] = float
+config["Slideshow"]["Transit_Time"] = float
 config["Slideshow"]["SCREEN_WIDTH"] = int
 config["Slideshow"]["SCREEN_HEIGHT"] = int
 
