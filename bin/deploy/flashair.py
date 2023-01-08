@@ -1,12 +1,19 @@
 import requests
 import os
 
+import assets.tools
+
+logger = assets.tools.get_logger("ImageLoader")
+
 class SDCARD:
 
     handler = lambda f: None
     
     def __init__(self, dir, hostname = "flashair", path = "DCIM/101MSDCF"):
+        logger.debug("Initializing SD Card downloader.")
+        logger.debug("Using SD Card at {hn}".format(hn = hostname))
         self.hostname = hostname
+        logger.debug("Downloading to {p}.".format(p = dir))
         self.path = path
         if(os.path.isdir(dir)):
             self.dir = dir
