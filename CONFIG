@@ -1,13 +1,23 @@
 [Basic]
-name = LAPTOP
+name = raspi
 deployment = no
+
+[IO]
+slideshow_toggle = yes
+shutdown = yes
+
+[Shutdown]
+enabled = yes
+gpio_left = 13
+gpio_right = 22
 
 [Slideshow]
 enabled = yes
-imagepath = /home/timo/Pictures/
+imagepath = /home/pi/Pictures/
 screentime = 5
 fps = 30
 transition_speed = 1.0
 screen_width = 1920
 screen_height = 1080
+gpio_toggle = 17
 
