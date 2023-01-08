@@ -25,19 +25,19 @@ class Slideshow():
     # SCREEN_WIDTH = 1920
     # SCREEN_HEIGHT = 1080
     IMAGE_PATH = os.path.join(config["Slideshow"]["ImagePath"], "*.JPG")
-    SCREEN_TIME = int(config["Slideshow"]["ScreenTime"])
+    SCREEN_TIME = config["Slideshow"]["Screen_Time"]
+    TRANSIT_TIME = config["Slideshow"]["Transit_Time"]
     FPS = config["Slideshow"]["FPS"]
-    TRANSITION_SPEED = config["Slideshow"]["TRANSITION_SPEED"] / 50
     SCREEN_WIDTH = config["Slideshow"]["SCREEN_WIDTH"]
     SCREEN_HEIGHT = config["Slideshow"]["SCREEN_HEIGHT"]
-
+    TRANSIT_SPEED = 1 / (TRANSIT_TIME * FPS)
     DEFAULT_IMAGES = os.path.join(DIR, "assets", "SCREENSAVER")
     SCREEN_RATIO = SCREEN_WIDTH / SCREEN_HEIGHT
     SCREEN_NAME = "Slideshow"
     
     index = 0
     running = True
-    bTransit = False # Tripwire so first screensaver is always instant
+    current_image = None
 
     def load_image(self, src):
         img = cv2.imread(src)
@@ -62,26 +62,30 @@ class Slideshow():
         for idx, new_image in enumerate(new_images):
             self.image_list.insert(self.index + idx + 1, new_image)
 
-    def next_image(self, image, transition = True):
+    def next_image(self, image, screensaver):
+        # If no image is provided (image = None)
+        # then the screensaver mode is enabled (=> normal = False)
         if(image is None):
             default = random.choice(os.listdir(self.DEFAULT_IMAGES))
             image = os.path.join(self.DEFAULT_IMAGES, default)
-
         next_image = self.load_image(image)
-        if(transition):
+        if(self.current_image is not None):
             current_alpha = 0
-            while(current_alpha < 1 and self.running):
+            transit_start = self.current_image
+            while(current_alpha < 1 and (self.running != screensaver)):
                 transition_image = cv2.addWeighted(
-                    self.current_image, 1 - current_alpha,
+                    transit_start, 1 - current_alpha,
                     next_image, current_alpha, 0)
-                current_alpha += self.TRANSITION_SPEED
+                current_alpha += self.TRANSIT_SPEED
+                self.current_image = transition_image
                 cv2.imshow(self.SCREEN_NAME, transition_image)
                 cv2.waitKey(int(1000/self.FPS))
+        if((self.running != screensaver)):
+            self.current_image = next_image
+            cv2.imshow(self.SCREEN_NAME, self.current_image)
+            cv2.waitKey(1)
         tshown = 0
-        self.current_image = next_image
-        cv2.imshow(self.SCREEN_NAME, self.current_image)
-        cv2.waitKey(1)
-        while(tshown < self.SCREEN_TIME and self.running):
+        while(tshown < self.SCREEN_TIME and (self.running != screensaver)):
             time.sleep(REACTION_TIME)
             tshown += REACTION_TIME
 
@@ -94,7 +98,6 @@ class Slideshow():
                 logger.debug("New TOGGLESCREEN command received.")
                 if(self.running):
                     logger.debug("Switching off display")
-                    self.bTransit = False
                 else:
                     logger.debug("Switching on display")
                 self.running = not self.running
@@ -108,7 +111,7 @@ class Slideshow():
         logger.debug("Loading image list.")
         self.images = self.get_image_list()
         logger.debug("Starting up Screensaver.")
-        self.next_image(None, transition = False)
+        self.next_image(None, False)
         logger.debug("Starting up Watcher.")
         watcher_thread = threading.Thread(target=self.Watcher, args=())
         watcher_thread.start()
@@ -118,24 +121,25 @@ class Slideshow():
         logger.info("Starting main loop.")
         while(True):
             if(self.running):
+                # Normal mode
                 logger.debug("Updating image list.")
                 self.update_image_list()
-                if(not self.index < len(self.image_list)):
+                if(not self.index + 1 < len(self.image_list)):
                     # All images have been shown
                     logger.debug("Loading new set of images.")
                     self.index = 0
                     self.get_image_list()
-                if(self.index < len(self.image_list)):
+                if(self.index  + 1 < len(self.image_list)):
                     # There is at least one picture available for showing.
                     self.index += 1
                     logger.debug("Displaying image #{i}".format(i = self.index))
-                    self.next_image(self.image_list[self.index])
+                    self.next_image(self.image_list[self.index], False)
                 else:
                     logger.debug("No pictures available, showing default")
-                    self.next_image(None)
+                    self.next_image(None, False)
             else:
-                self.next_image(None, transition = self.bTransit)
-                if(not self.bTransit): self.bTransit = True
+                self.next_image(None, True)
+                
 
  
 
