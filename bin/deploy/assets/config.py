@@ -24,6 +24,15 @@ config["Basic"] = {}
 config["Basic"]["Name"] = str
 config["Basic"]["Deployment"] = bool
 
+config["IO"] = {}
+config["IO"]["Slideshow_Toggle"] = bool
+config["IO"]["Shutdown"] = bool
+
+config["Shutdown"] = {}
+config["Shutdown"]["Enabled"] = bool
+config["Shutdown"]["GPIO_LEFT"] = int
+config["Shutdown"]["GPIO_RIGHT"] = int
+
 config["Slideshow"] = {}
 config["Slideshow"]["Enabled"] = bool
 config["Slideshow"]["ImagePath"] = str
@@ -32,6 +41,7 @@ config["Slideshow"]["FPS"] = int
 config["Slideshow"]["TRANSITION_SPEED"] = float
 config["Slideshow"]["SCREEN_WIDTH"] = int
 config["Slideshow"]["SCREEN_HEIGHT"] = int
+config["Slideshow"]["GPIO_TOGGLE"] = int
 
 def restore():
     logger.debug("Reloading Config")
@@ -57,8 +67,7 @@ def load():
                 output_config[section][key] = loaded_config[section].getboolean(key)
 
     return output_config
-if __name__ == "__main__":
-    # Init Config
+def init():
     logger.debug("Initializing new Config.")
     new_config  = configparser.ConfigParser()
     for section in config:
