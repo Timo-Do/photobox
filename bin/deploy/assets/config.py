@@ -35,6 +35,10 @@ config["GPIOs"]["Shutdown_left"] = int
 config["GPIOs"]["Shutdown_right"] = int
 config["GPIOs"]["Shutter"] = int
 
+config["SDCard"] = {}
+config["SDCard"]["Reaction_Time"] = float
+config["SDCard"]["ImagePath"] = str
+
 config["Shutdown"] = {}
 config["Shutdown"]["Enabled"] = bool
 

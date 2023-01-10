@@ -134,7 +134,8 @@ docs
 paperspace
 passwords
 bin/deploy/assets/SCREENSAVER/
-CONFIG
-CONFIG.default
+
 
 .vscode
+CONFIG
+CONFIG.default
