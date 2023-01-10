@@ -1,6 +1,5 @@
 import time
 import imutils
-import logging
 import sys
 import numpy as np
 import cv2
