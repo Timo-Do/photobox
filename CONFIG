@@ -5,11 +5,16 @@ deployment = no
 [IO]
 slideshow_toggle = yes
 shutdown = yes
+shutter = yes
+
+[GPIOs]
+slideshow_toggle = 17
+shutdown_left = 17
+shutdown_right = 22
+shutter = 13
 
 [Shutdown]
 enabled = yes
-gpio_left = 13
-gpio_right = 22
 
 [Slideshow]
 enabled = yes
@@ -19,5 +24,4 @@ fps = 30
 transition_speed = 1.0
 screen_width = 1920
 screen_height = 1080
-gpio_toggle = 17
 
