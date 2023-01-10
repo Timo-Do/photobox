@@ -4,39 +4,45 @@ import networking
 import assets.config
 
 class Functionality():
-    def __init__(self, name, on_trigger, GPIOs, act_ticks = 10):
-        self.name = name
-        self.enabled = True
+    enabled = True
+    ticks = 10
+
+    def __init__(self, action, GPIOs, **kwargs):
+        self.__dict__.update(kwargs)
         self.GPIOs = GPIOs
-        self.on_trigger = on_trigger
-        self.act_ticks = act_ticks
+        self.action = action
+    
+    def disable(self):
+        self.enabled = False
+    
+    def enable(self):
+        self.enabled = True
 
 logger = assets.tools.get_logger("IO")
 config = assets.config.load()
 
-funcs = []
+input_funcs = {}
 
 if(config["IO"]["Slideshow_Toggle"]):
-    funcs.append(
-        Functionality("Slideshow Toggle", "TOGGLESCREEN",
-        [config["Slideshow"]["GPIO_TOGGLE"]])
-    )
+    input_funcs["Slideshow Toggle"] = Functionality(
+        lambda : networking.command("TOGGLESCREEN"),
+        [config["GPIOs"]["Slideshow_Toggle"]])
 
 if(config["IO"]["Shutdown"]):   
-    funcs.append(
-        Functionality("Shutdown", "SHUTDOWN",
-            [config["Shutdown"]["GPIO_LEFT"], config["Shutdown"]["GPIO_RIGHT"]],
-            act_ticks = 30)
-    )
+    input_funcs["Shutdown"] = Functionality(
+            lambda : networking.command("SHUTDOWN"),
+            [config["GPIOs"]["Shutdown_left"], config["GPIOs"]["Shutdown_right"]],
+            ticks = 30)
 
+output_funcs = {}
 
 GPIO.setmode(GPIO.BCM)
 
 gpios_in = []
 
-for func in funcs:
+for name, func in input_funcs.items():
     for gpio in func.GPIOs:
-        logger.debug("Adding GPIO {g} for {n} functionality.".format(g = gpio, n = func.name))
+        logger.debug("Adding GPIO {g} for {n} functionality.".format(g = gpio, n = name))
         gpios_in.append(gpio)
 
 gpios_in = set(gpios_in)
@@ -56,15 +62,14 @@ try:
                 state[gpio] = 0
     
         # Inputs
-        for func in funcs:
-            if(all(state[gpio] > func.act_ticks for gpio in func.GPIOs)):
-                if(func.enabled):
-                    logger.info("{n} triggered.".format(n = func.name))
-                    networking.command(func.on_trigger)
-                    func.enabled = False
-            elif(all(state[gpio] == 0 for gpio in func.GPIOs)):
-                logger.debug("Resetting {n}.".format(n = func.name))
-                func.enabled = True
+        for name, func in input_funcs.items():
+            if(func.enabled and all(state[gpio] > func.ticks for gpio in func.GPIOs)):
+                logger.info("{n} triggered.".format(n = name))
+                func.action()
+                func.disable()
+            elif(not func.enabled and all(state[gpio] == 0 for gpio in func.GPIOs)):
+                logger.debug("Resetting {n}.".format(n = name))
+                func.enable()
         
 
         time.sleep(0.01)

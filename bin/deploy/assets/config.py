@@ -27,11 +27,16 @@ config["Basic"]["Deployment"] = bool
 config["IO"] = {}
 config["IO"]["Slideshow_Toggle"] = bool
 config["IO"]["Shutdown"] = bool
+config["IO"]["Shutter"] = bool
+
+config["GPIOs"] = {}
+config["GPIOs"]["Slideshow_Toggle"] = int
+config["GPIOs"]["Shutdown_left"] = int
+config["GPIOs"]["Shutdown_right"] = int
+config["GPIOs"]["Shutter"] = int
 
 config["Shutdown"] = {}
 config["Shutdown"]["Enabled"] = bool
-config["Shutdown"]["GPIO_LEFT"] = int
-config["Shutdown"]["GPIO_RIGHT"] = int
 
 config["Slideshow"] = {}
 config["Slideshow"]["Enabled"] = bool
@@ -41,7 +46,6 @@ config["Slideshow"]["FPS"] = int
 config["Slideshow"]["Transit_Time"] = float
 config["Slideshow"]["SCREEN_WIDTH"] = int
 config["Slideshow"]["SCREEN_HEIGHT"] = int
-config["Slideshow"]["GPIO_TOGGLE"] = int
 
 def restore():
     logger.debug("Reloading Config")
