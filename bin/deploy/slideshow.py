@@ -24,7 +24,7 @@ class Slideshow():
     # TRANSITION_SPEED = 0.02
     # SCREEN_WIDTH = 1920
     # SCREEN_HEIGHT = 1080
-    IMAGE_PATH = os.path.join(config["Slideshow"]["ImagePath"], "*.JPG")
+    IMAGE_PATH = config["Slideshow"]["ImagePath"]
     SCREEN_TIME = config["Slideshow"]["Screen_Time"]
     TRANSIT_TIME = config["Slideshow"]["Transit_Time"]
     FPS = config["Slideshow"]["FPS"]
@@ -51,13 +51,19 @@ class Slideshow():
             img = img[crop_upper:-crop_lower, :]
         return img
 
+    def _image_list(self):
+        image_list = []
+        for suffix in ["*.JPG", "*.jpg"]:
+            image_list.extend(glob.glob(os.path.join(self.IMAGE_PATH, suffix)))
+        return image_list
+
     def get_image_list(self):
-        image_list = glob.glob(self.IMAGE_PATH)
+        image_list = self._image_list()
         random.shuffle(image_list)
         self.image_list = image_list
 
     def update_image_list(self):
-        new_image_list = glob.glob(self.IMAGE_PATH)
+        new_image_list = self._image_list()
         new_images = [im for im in new_image_list if im not in self.image_list]
         for idx, new_image in enumerate(new_images):
             self.image_list.insert(self.index + idx + 1, new_image)

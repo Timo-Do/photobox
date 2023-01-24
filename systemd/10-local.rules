@@ -1,0 +1,2 @@
+# Rule naming every USB drive at 2-1 the same
+KERNELS=="2-1", KERNEL=="sd?[1-9]", SUBSYSTEMS=="usb", ACTION=="add", SUBSYSTEM=="block", SYMLINK+="usbtop", ENV{SYSTEMD_WANTS}="mnt-usbtop.mount"

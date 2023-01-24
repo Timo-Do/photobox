@@ -1,3 +1,3 @@
 #!/usr/bin/bash
 
-mountpoint -q $USBMNT && sudo umount /dev/usbtop
+mountpoint -q $USBMNT && sudo systemd-umount /dev/usbtop
