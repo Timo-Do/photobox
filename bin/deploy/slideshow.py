@@ -71,7 +71,7 @@ class Slideshow():
     def next_image(self, image, screensaver):
         # If no image is provided (image = None)
         # then the screensaver mode is enabled (=> normal = False)
-        if(image is None):
+        if(image is None or not os.path.exists(image)):
             default = random.choice(os.listdir(self.DEFAULT_IMAGES))
             image = os.path.join(self.DEFAULT_IMAGES, default)
         next_image = self.load_image(image)
