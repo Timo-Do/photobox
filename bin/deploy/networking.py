@@ -1,3 +1,4 @@
+#!/home/pi/venvs/photobox/bin/python
 import socket
 import threading
 import time

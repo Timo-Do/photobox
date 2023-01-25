@@ -15,3 +15,9 @@ In case you are serious about installing this piece of software, here are a coup
 cv2 (duh)
 tflite_runtime
 unclutter (for removing the cursor, put that into your crontab)
+
+
+## config
+
+raspi: visudo -> mount no passwd
+udev: udev rule to add usbtop

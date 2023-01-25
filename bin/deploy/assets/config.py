@@ -5,7 +5,7 @@ import shutil
 
 logger = tools.get_logger("CONFIG")
 
-PATH = os.environ["CONFIG"]
+PATH = os.environ["PWFB_CONFIG"]
 
 bool2str = {
     True  : "yes",

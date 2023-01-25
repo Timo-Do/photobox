@@ -1,0 +1,8 @@
+[Unit]
+Description=Mount /dev/usbtop at /mnt/usbtop
+
+[Mount]
+What=/dev/usbtop
+Where=/mnt/usbtop
+Type=auto
+Options=noauto,nofail

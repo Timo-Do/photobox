@@ -1,0 +1,27 @@
+[Basic]
+name = raspi
+deployment = no
+
+[IO]
+slideshow_toggle = yes
+shutdown = yes
+shutter = yes
+
+[GPIOs]
+slideshow_toggle = 17
+shutdown_left = 17
+shutdown_right = 22
+shutter = 13
+
+[Shutdown]
+enabled = yes
+
+[Slideshow]
+enabled = yes
+imagepath = /home/pi/Pictures/
+screentime = 5
+fps = 30
+transition_speed = 1.0
+screen_width = 1920
+screen_height = 1080
+
