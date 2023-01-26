@@ -1,0 +1,4 @@
+#!/usr/bin/bash
+
+mountpoint -q $USBMNT || sudo systemctl start mnt-usbtop.mount
+

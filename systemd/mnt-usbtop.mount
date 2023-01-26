@@ -5,4 +5,4 @@ Description=Mount /dev/usbtop at /mnt/usbtop
 What=/dev/usbtop
 Where=/mnt/usbtop
 Type=auto
-Options=noauto,nofail
+Options=noauto,nofail,uid=1000

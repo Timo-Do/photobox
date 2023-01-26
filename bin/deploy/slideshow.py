@@ -1,3 +1,4 @@
+#!/home/pi/venvs/photobox/bin/python
 import assets.config
 import assets.tools
 
@@ -38,6 +39,7 @@ class Slideshow():
     index = 0
     running = True
     current_image = None
+    images = []
 
     def load_image(self, src):
         img = cv2.imread(src)
@@ -68,13 +70,21 @@ class Slideshow():
         for idx, new_image in enumerate(new_images):
             self.image_list.insert(self.index + idx + 1, new_image)
 
-    def next_image(self, image, screensaver):
+    def _get_default(self):
+        default = random.choice(os.listdir(self.DEFAULT_IMAGES))
+        return os.path.join(self.DEFAULT_IMAGES, default)
+
+    def next_image(self, imagepath, screensaver):
         # If no image is provided (image = None)
         # then the screensaver mode is enabled (=> normal = False)
-        if(image is None or not os.path.exists(image)):
-            default = random.choice(os.listdir(self.DEFAULT_IMAGES))
-            image = os.path.join(self.DEFAULT_IMAGES, default)
-        next_image = self.load_image(image)
+        if(imagepath is None or not os.path.exists(imagepath)):
+            imagepath = self._get_default()
+        try:
+            next_image = self.load_image(imagepath)
+        except Exception as e:
+            logger.error("Could not load image {img}: {err}".format(img = imagepath, err = e.msg))
+            next_image(self._get_default())
+
         if(self.current_image is not None):
             current_alpha = 0
             transit_start = self.current_image
@@ -119,7 +129,7 @@ class Slideshow():
         logger.debug("Starting up Screensaver.")
         self.next_image(None, False)
         logger.debug("Starting up Watcher.")
-        watcher_thread = threading.Thread(target=self.Watcher, args=())
+        watcher_thread = threading.Thread(target=self.Watcher, args=(), daemon=True)
         watcher_thread.start()
         self._main_loop()
 

@@ -1,6 +1,7 @@
 import requests
 import os
 import time
+import sys
 
 import assets.config
 import assets.tools
@@ -80,8 +81,13 @@ class SDCARD:
 
 config = assets.config.load()
 logger.debug("Starting up SD Card image loader.")
-imagepath = config["SDCard"]["ImagePath"]
-card = SDCARD(imagepath, hostname = "192.168.0.102", path = "DCIM/101MSDCF")
+mountpoint = config["SDCard"]["MountPoint"]
+if(not os.path.ismount(mountpoint)):
+    logger.error("USB Drive is not mounted.")
+    sys.exit()
+dirname = os.path.join(mountpoint, config["SDCard"]["DirName"])
+os.makedirs(dirname, exist_ok=True)
+card = SDCARD(dirname, hostname = "192.168.0.99", path = "DCIM/101MSDCF")
 logger.debug("Starting main loop.")
 while(True):
     file_list = card.getList()

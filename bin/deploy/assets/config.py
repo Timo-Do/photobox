@@ -37,7 +37,8 @@ config["GPIOs"]["Shutter"] = int
 
 config["SDCard"] = {}
 config["SDCard"]["Reaction_Time"] = float
-config["SDCard"]["ImagePath"] = str
+config["SDCard"]["MountPoint"] = str
+config["SDCard"]["DirName"] = str
 
 config["Shutdown"] = {}
 config["Shutdown"]["Enabled"] = bool
