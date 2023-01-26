@@ -1,4 +1,6 @@
 export USBMNT=/mnt/usbtop
 export PWFB_CONFIG=/home/pi/photobox/CONFIG
+export PWFB_BIN=/home/pi/photobox/bin/deploy
 export PATH=$PATH:/home/pi/.local/bin
-export PATH=$PATH:/home/pi/photobox/bin/deploy
+export PATH=$PATH:$PWFB_BIN
+export PWFB=/home/pi/photobox
