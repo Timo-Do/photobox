@@ -18,6 +18,9 @@ config = assets.config.load()
 DIR = os.path.dirname(os.path.realpath(sys.argv[0]))
 REACTION_TIME = 0.1
 
+def subtract_lists(list1, list2):
+    return list(set(list1) - set(list2))
+
 class Slideshow():
 
     # SCREEN_TIME = 5000
@@ -40,6 +43,8 @@ class Slideshow():
     running = True
     current_image = None
     images = []
+    seen_image_list= []
+    last_image_list = []
 
     def load_image(self, src):
         img = cv2.imread(src)
@@ -53,60 +58,65 @@ class Slideshow():
             img = img[crop_upper:-crop_lower, :]
         return img
 
-    def _image_list(self):
+    def get_list(self, path):
         image_list = []
-        for suffix in ["*.JPG", "*.jpg"]:
-            image_list.extend(glob.glob(os.path.join(self.IMAGE_PATH, suffix)))
+        for search_term in ["*.JPG", "*.jpg", "*.PNG", "*.png"]:
+            image_list.extend(glob.glob(os.path.join(path, search_term)))
         return image_list
 
     def get_image_list(self):
-        image_list = self._image_list()
-        random.shuffle(image_list)
-        self.image_list = image_list
+        return self.get_list(self.IMAGE_PATH)
 
-    def update_image_list(self):
-        new_image_list = self._image_list()
-        new_images = [im for im in new_image_list if im not in self.image_list]
-        for idx, new_image in enumerate(new_images):
-            self.image_list.insert(self.index + idx + 1, new_image)
+    def get_default_image_list(self):
+        return self.get_list(self.DEFAULT_IMAGES)
 
-    def _get_default(self):
-        default = random.choice(os.listdir(self.DEFAULT_IMAGES))
-        return os.path.join(self.DEFAULT_IMAGES, default)
-
-    def next_image(self, imagepath, screensaver):
-        # If no image is provided (image = None)
-        # then the screensaver mode is enabled (=> normal = False)
-        if(imagepath is None or not os.path.exists(imagepath)):
-            imagepath = self._get_default()
-        try:
-            next_image = self.load_image(imagepath)
-        except Exception as e:
-            logger.error("Could not load image {img}: {err}".format(img = imagepath, err = e.msg))
-            next_image(self._get_default())
-
+    def transit_to_image(self, image, state):
         if(self.current_image is not None):
             current_alpha = 0
             transit_start = self.current_image
-            while(current_alpha < 1 and (self.running != screensaver)):
+            while(current_alpha < 1 and (self.running == state)):
                 transition_image = cv2.addWeighted(
                     transit_start, 1 - current_alpha,
-                    next_image, current_alpha, 0)
+                    image, current_alpha, 0)
                 current_alpha += self.TRANSIT_SPEED
                 self.current_image = transition_image
                 cv2.imshow(self.SCREEN_NAME, transition_image)
                 cv2.waitKey(int(1000/self.FPS))
-        if((self.running != screensaver)):
-            self.current_image = next_image
+
+    def show_image(self, image, state):
+        if(self.running == state):
+            self.current_image = image
             cv2.imshow(self.SCREEN_NAME, self.current_image)
             cv2.waitKey(1)
         tshown = 0
-        while(tshown < self.SCREEN_TIME and (self.running != screensaver)):
+        while(tshown < self.SCREEN_TIME and (self.running == state)):
             time.sleep(REACTION_TIME)
             tshown += REACTION_TIME
 
-    def get_default(self):
-        return 
+    def get_random_default_image_path(self):
+        default = random.choice(os.listdir(self.DEFAULT_IMAGES))
+        return os.path.join(self.DEFAULT_IMAGES, default)
+
+    def get_list_to_pick_from(self, state):
+        if(state):
+            new_image_list = self.get_image_list()
+            if(not new_image_list):
+                logger.debug("No images found in directory.")
+                list_to_pick_from = self.get_default_image_list()
+            else: 
+                brand_new_images = subtract_lists(new_image_list, self.last_image_list)
+                if(not brand_new_images):
+                    logger.debug("Found no new images in directory.")
+                    list_to_pick_from = new_image_list
+                else:
+                    logger.debug("Found new images in directory.")
+                    list_to_pick_from = brand_new_images
+        else:
+            list_to_pick_from = self.get_default_image_list()
+
+        self.last_image_list = new_image_list
+        
+        return list_to_pick_from
 
     def Watcher(self):
         while(True):
@@ -125,9 +135,10 @@ class Slideshow():
         cv2.namedWindow(self.SCREEN_NAME, cv2.WND_PROP_FULLSCREEN)
         cv2.setWindowProperty(self.SCREEN_NAME,cv2.WND_PROP_FULLSCREEN,cv2.WINDOW_FULLSCREEN)
         logger.debug("Loading image list.")
-        self.images = self.get_image_list()
-        logger.debug("Starting up Screensaver.")
-        self.next_image(None, False)
+        logger.debug("Starting up initial Screensaver.")
+        default_image_path = self.get_random_default_image_path()
+        default_image = self.load_image(default_image_path)
+        self.show_image(default_image, self.running)
         logger.debug("Starting up Watcher.")
         watcher_thread = threading.Thread(target=self.Watcher, args=(), daemon=True)
         watcher_thread.start()
@@ -136,27 +147,23 @@ class Slideshow():
     def _main_loop(self):
         logger.info("Starting main loop.")
         while(True):
-            if(self.running):
-                # Normal mode
-                logger.debug("Updating image list.")
-                self.update_image_list()
-                if(not self.index + 1 < len(self.image_list)):
-                    # All images have been shown
-                    logger.debug("Loading new set of images.")
-                    self.index = 0
-                    self.get_image_list()
-                if(self.index  + 1 < len(self.image_list)):
-                    # There is at least one picture available for showing.
-                    self.index += 1
-                    logger.debug("Displaying image #{i}".format(i = self.index))
-                    self.next_image(self.image_list[self.index], False)
-                else:
-                    logger.debug("No pictures available, showing default")
-                    self.next_image(None, False)
-            else:
-                self.next_image(None, True)
-                
-
- 
+            state = self.running
+            list_to_pick_from = self.get_list_to_pick_from(state = state)
+            unseen_images = subtract_lists(list_to_pick_from, self.seen_image_list)
+            if(not unseen_images):
+                logger.debug("All pictures have been shown, beginning new set.")
+                self.seen_image_list = []
+                unseen_images = list_to_pick_from
+            image_path = random.choice(unseen_images)
+            logger.debug("Picked {img} for display.".format(img = image_path))
+            try:
+                image = self.load_image(image_path)
+            except Exception as e:
+                logger.error("Could not load image {img}: {err}".format(img = image_path, err = e.msg))
+                image = self.load_image(self.get_random_default_image_path())
+            
+            self.seen_image_list.append(image_path)
+            self.transit_to_image(image, state)
+            self.show_image(image, state)
 
 Slideshow()
