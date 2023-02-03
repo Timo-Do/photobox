@@ -1,3 +1,4 @@
+#!/home/pi/venvs/photobox/bin/python
 import requests
 import os
 import time
@@ -79,12 +80,21 @@ class SDCARD:
         
         return diff_list
 
+def is_mounted(mountpoint):
+    return os.path.ismount(mountpoint)
+
+def on_dismount():
+    logger.error("Device is not mounted.")
+    sys.exit()
+
+
 config = assets.config.load()
 logger.debug("Starting up SD Card image loader.")
 mountpoint = config["SDCard"]["MountPoint"]
-if(not os.path.ismount(mountpoint)):
-    logger.error("USB Drive is not mounted.")
-    sys.exit()
+if(is_mounted(mountpoint)):
+    logger.info("Using device mounted at {mp}".format(mp = mountpoint))
+else:
+    on_dismount()
 dirname = os.path.join(mountpoint, config["SDCard"]["DirName"])
 os.makedirs(dirname, exist_ok=True)
 card = SDCARD(dirname, hostname = "192.168.0.99", path = "DCIM/101MSDCF")
@@ -94,5 +104,8 @@ while(True):
     diff_list = card.diff(file_list)
     jpg_list = [image for image in diff_list if image["name"].upper().endswith("JPG")]
     for image in jpg_list:
-        card.download(image["name"])
+        if(is_mounted(mountpoint)):
+            card.download(image["name"])
+        else:
+            on_dismount()
     time.sleep(config["SDCard"]["Reaction_Time"])
