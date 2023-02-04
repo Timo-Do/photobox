@@ -224,16 +224,18 @@ class RadioOperator:
                         if(len(info) > 2):
                             footer = info[2]
                         # # # # # # # # # # # #
-                        if(header == "SND"):
+                        if(header.endswith("SND")):
+                            # Either LOCAL ("LSND") or GLOBAL ("GSND")
                             # New Event #
                             # Append to Event List
                             self._add_evt(Event(body, sender = self.address))
-                            # Notify the world
-                            msg = self._build_transmit(body)
-                            logger.debug("Appending \"{msg}\" to outbound queue".format(
-                                msg = msg.decode("ascii")
-                            ))
-                            self.OUTBOUND.append(msg)
+                            if(header.startswith("G")):
+                                # Notify the world
+                                msg = self._build_transmit(body)
+                                logger.debug("Appending \"{msg}\" to outbound queue".format(
+                                    msg = msg.decode("ascii")
+                                ))
+                                self.OUTBOUND.append(msg)
                             connection.sendall(ACK)
                         if(header == "CHK"):
                             # Event Command #
@@ -330,20 +332,24 @@ def _check_validity(name):
             ))
     return
 
-def broadcast(event):
-    msg = "SND" + DELIMITER + event.upper()
+def broadcast(event, local = False):
+    if(local):
+        header = "LSND"
+    else:
+        header = "GSND"
+    msg = header + DELIMITER + event.upper()
     response = _send_bytes(msg.encode("ascii"))
     if(not response == ACK):
         raise ValueError("No Acknowledgement has been received from server.")
     return
 
-def notify(event):
+def notify(event, local = False):
     _check_validity(event)
-    broadcast(NFY_PREFIX + "_" + event)
+    broadcast(NFY_PREFIX + "_" + event, local = local)
 
-def command(event):
+def command(event, local = False):
     _check_validity(event)
-    broadcast(CMD_PREFIX + "_" + event)
+    broadcast(CMD_PREFIX + "_" + event, local = local)
 
 def get_notifications():
     response = _send_bytes("LIST".encode("ascii"))
