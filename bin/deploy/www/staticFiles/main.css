@@ -2,6 +2,10 @@
     font-family: 'Roboto'; 
     src: url('/staticFiles/fonts/Roboto-Regular.ttf');
 }
+@font-face {
+    font-family: 'Sallita'; 
+    src: url('/staticFiles/fonts/Sallita.ttf');
+}
 
 body {
     background: lightgray;
@@ -19,16 +23,12 @@ body {
 }
 
 .tile {
-    display: flex;
-    justify-content: center;
-    font-family: 'Roboto';
     align-items: center;
     text-shadow: lightgray 1px 0 1px;
     border-style: solid;
     border-color: darkred;
-    color: darkred;
-    font-size: 32px;
     user-select: none;
+    
     border-width: 1px;
     background-image: repeating-linear-gradient(
         45deg,
@@ -38,4 +38,18 @@ body {
         transparent 10px
     );
 }
-
+.title {
+    font-size: 48px;
+    color: darkred;
+    height: 60px;
+    text-align: center;
+    vertical-align: middle;
+    line-height: 60px; 
+    font-family: 'Sallita';
+}
+.subtitle {
+    font-size: 13px;
+    color: darkred;
+    font-family: 'Roboto';
+    text-align: center;
+}
