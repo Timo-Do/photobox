@@ -8,9 +8,9 @@
     <!--  Load JavaScript in Flask with html-->
     <head>  
         <script type = "text/javascript">  
-            function Exec(){
+            function Exec(cmd){
                 var request = new XMLHttpRequest()
-                request.open("GET", "/toggle", true)
+                request.open("GET", "/" + cmd, true)
                 request.send()
             }
     </script>  
@@ -18,16 +18,19 @@
 </head>
 <body>
     <section class="tile-layout">
-        <div class="tile">1</div>
-        <div class="tile">5</div>
-        <div class="tile">3</div>
-        <div class="tile">4</div>
-        <div class="tile">5</div>
-        <div class="tile">6</div>
-        <div class="tile" onclick="Exec()">Test</div>
-        <div class="tile">8</div>
-        <div class="tile">9</div>
-        <div class="tile">9</div>
+        <div class="tile"></div>
+        <div class="tile"></div>
+        <div class="tile"></div>
+        <div class="tile"></div>
+        <div class="tile"></div>
+        <div class="tile"></div>
+        <div class="tile" onclick="Exec('toggle')">
+            <div class="title">Husch!</div>
+            <div class="subtitle">Schalte die Slideshow um.</div>
+        </div>
+        <div class="tile"></div>
+        <div class="tile"></div>
+        <div class="tile"></div>
     </section>      
 </body>
 </html>

@@ -6,7 +6,19 @@ app = flask.Flask(__name__, template_folder="www/templateFiles", static_folder="
 
 @app.route("/")
 def index():
-    return flask.render_template("index.html")
+    commands = [
+        {
+            "title"     : "Husch!",
+            "subtitle"  : "Schalte die Slideshow um.",
+            "cmd"       : "toggle"
+        },
+        {
+            "title"     : "Snap!",
+            "subtitle"  : "Schieße ein Photo.",
+            "cmd"       : "shutter"
+        },
+    ]
+    return flask.render_template("command_tiles.html", commands = commands)
 
 @app.route("/toggle")
 def toggle():

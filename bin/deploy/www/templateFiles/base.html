@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <title>Photobox</title>
+    <!--  Load CSS in Flask with html-->
+    <link rel="stylesheet" href='/staticFiles/main.css' />
+
+    <!--  Load JavaScript in Flask with html-->
+    <head>  
+        <script type = "text/javascript">  
+            function Exec(cmd){
+                var request = new XMLHttpRequest()
+                request.open("GET", "/" + cmd, true)
+                request.send()
+            }
+    </script>  
+
+</head>
+<body>
+    {% block content %} {% endblock %}   
+</body>
+</html>
