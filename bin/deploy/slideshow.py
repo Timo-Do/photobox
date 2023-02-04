@@ -109,13 +109,13 @@ class Slideshow():
                     logger.debug("Found no new images in directory.")
                     list_to_pick_from = new_image_list
                 else:
-                    logger.debug("Found new images in directory.")
+                    logger.debug("Found {n} new image(s) in directory.".format(n = len(brand_new_images)))
                     list_to_pick_from = brand_new_images
+            self.last_image_list = new_image_list
         else:
             list_to_pick_from = self.get_default_image_list()
 
-        self.last_image_list = new_image_list
-        
+
         return list_to_pick_from
 
     def Watcher(self):
