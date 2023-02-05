@@ -2,3 +2,4 @@ opencv-python
 tflite
 Flask
 requests
+RPi.GPIO
