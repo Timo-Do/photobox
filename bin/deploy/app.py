@@ -6,6 +6,16 @@ app = flask.Flask(__name__, template_folder="www/templateFiles", static_folder="
 
 @app.route("/")
 def index():
+    navs = [
+        {
+            "title"     :   "Befehle",
+            "target"    :   "commands" 
+        }
+    ]
+    return flask.render_template("navigation_rows.html", navs=navs)
+
+@app.route("/commands")
+def commands():
     commands = [
         {
             "title"     : "Husch!",
@@ -18,12 +28,13 @@ def index():
             "cmd"       : "shutter"
         },
     ]
-    return flask.render_template("command_tiles.html", commands = commands)
+    return flask.render_template("command_tiles.html", commands = commands, ret="index")
 
 @app.route("/toggle")
 def toggle():
     networking.command("TOGGLESCREEN")
     return ""
+
 
 if(__name__ == "__main__"):
     app.run(debug = True, host="0.0.0.0", port=80)

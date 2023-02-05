@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<section class="row-layout">
+    {% for nav in navs %}
+    <a href="{{ url_for(nav['target']) }}">
+        <div class="tile row">
+            <div class="title rowLeft">{{nav['title']}}</div>
+            <div class="title rowRight info">></div>
+        </div>
+    </a>
+    {% endfor %}
+</section>  
+{% endblock %}
