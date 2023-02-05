@@ -87,7 +87,8 @@ def on_dismount():
     logger.error("Device is not mounted.")
     sys.exit()
 
-
+# Added sleep to prevent rapid restarts from supervisor
+time.sleep(1)
 config = assets.config.load()
 logger.debug("Starting up SD Card image loader.")
 mountpoint = config["SDCard"]["MountPoint"]
