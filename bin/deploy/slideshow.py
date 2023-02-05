@@ -9,7 +9,6 @@ import glob
 import sys
 import networking
 import time
-import threading
 
 os.environ["DISPLAY"] = ":0.0"
 
@@ -117,17 +116,14 @@ class Slideshow():
 
 
         return list_to_pick_from
-
-    def Watcher(self):
-        while(True):
-            if(networking.get_command("TOGGLESCREEN")):
-                logger.debug("New TOGGLESCREEN command received.")
-                if(self.running):
-                    logger.debug("Switching off display")
-                else:
-                    logger.debug("Switching on display")
-                self.running = not self.running
-            time.sleep(REACTION_TIME)
+    
+    def toggle(self):
+        logger.debug("New TOGGLESCREEN command received.")
+        if(self.running):
+            logger.debug("Switching off display")
+        else:
+            logger.debug("Switching on display")
+        self.running = not self.running
 
     def __init__(self):
         logger.info("Starting up.")
@@ -140,8 +136,7 @@ class Slideshow():
         default_image = self.load_image(default_image_path)
         self.show_image(default_image, self.running)
         logger.debug("Starting up Watcher.")
-        watcher_thread = threading.Thread(target=self.Watcher, args=(), daemon=True)
-        watcher_thread.start()
+        networking.on_command("TOGGLESCREEN", self.toggle)
         self._main_loop()
 
     def _main_loop(self):

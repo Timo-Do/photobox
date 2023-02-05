@@ -19,6 +19,7 @@ WAIT_BEFORE_RETRY = 10
 QUEUE_PAUSE = 0.01
 EVENT_LIFETIME = 10
 MAX_NAME_LEN = 32
+REFRESH_RATE = 0.2
 DELIMITER = ":"
 ACK = "OK".encode("ascii")
 ERR = "ERR".encode("ascii")
@@ -268,11 +269,11 @@ class RadioOperator:
 
     def _setup_threads(self, which):
         if(which == "AGENT"):
-            return threading.Thread(target=self.Agent, args=())
+            return threading.Thread(target=self.Agent, args=(), daemon = True)
         elif(which == "TRANSCEIVER"):
-            return threading.Thread(target=self.Transceiver, args=())
+            return threading.Thread(target=self.Transceiver, args=(), daemon = True)
         elif(which == "HEART"):
-            return threading.Thread(target=self.Heart, args=())
+            return threading.Thread(target=self.Heart, args=(), daemon = True)
         else:
             raise ValueError("Unknown thread name. Possible names: HEART, AGENT, TRANSCEIVER")
 
@@ -359,6 +360,15 @@ def get_peers():
     response = _send_bytes("PEERS".encode("ascii"))
     return _decode_obj(response)
 
+def on_command(cmd, fun):
+    def loop():
+        while(True):
+            if(get_command(cmd)):
+                fun()
+            time.sleep(REFRESH_RATE)
+    thread = threading.Thread(target=loop, args=(), daemon = True)
+    thread.start()
+
 def get_command(event):
     _check_validity(event)
     msg = "CHK" + DELIMITER + event.upper()
@@ -374,13 +384,3 @@ def get_command(event):
             return response
 if __name__ == "__main__":
     RadioOperator()
-    # while(True):
-    #     match input().split():
-    #         case ["command", cmd]:
-    #             command(cmd)
-    #         case ["notify", nfy]:
-    #             notify(nfy)    
-    #         case ["break"]:
-    #             break
-    #         case _:
-    #             print("Unknown input.")
