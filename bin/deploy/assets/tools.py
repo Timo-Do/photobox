@@ -18,7 +18,8 @@ def get_logger(appname):
     logger.setLevel(LOGGING_LEVEL)
     console_logger = logging.StreamHandler()
     console_logger.setFormatter(logger_formatter)
-    logger.addHandler(console_logger)
+    if not logger.handlers:
+        logger.addHandler(console_logger)
     logger.addFilter(DuplicateFilter())
 
     
