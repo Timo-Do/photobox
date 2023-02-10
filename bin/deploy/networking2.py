@@ -6,6 +6,8 @@ import struct
 import pickle
 import uuid
 import assets.tools
+import os
+import sys
 
 logger = assets.tools.get_logger("NETWORKING")
 
@@ -19,12 +21,14 @@ REFRESH_RATE = 0.01
 MAX_NAME_LEN = 32
 DELIMITER = ":"
 
+DIR = os.path.dirname(os.path.realpath(sys.argv[0]))
+SOCKET_ADDRESS = os.path.join(DIR, "UD_SOCKET")
+
 ACK = "OK".encode("ascii")
 ERR = "ERR".encode("ascii")
 YES = "YES".encode("ascii")
 NO = "NO".encode("ascii")
 EOT = "EOT".encode("ascii")
-
 
 class Event(threading.Event):
     def fire(self):
@@ -119,14 +123,18 @@ class RadioOperator:
                     sender = info[0]
                     sender_ip = received[1][0]
                     self.PEERS[sender] = sender_ip
-                    name = info[1]
+                    event = info[1]
+                    logger.debug("Received event {e} from {s}.".format(
+                        e = event,
+                        s = sender_ip 
+                    ))
                     # New Event #
                     if(sender != self.address):
-                        logger.debug("Firing event {n}.".format(n = name))
-                        self.get_event(name).fire()
+                        logger.debug("Firing event {n}.".format(n = event))
+                        self.get_event(event).fire()
                     else:
                         logger.debug("Rejected event \"{evt}\" because localhost was the sender.".format(
-                            evt = name
+                            evt = event
                         ))
         except Exception as e:
             raise e
@@ -159,11 +167,14 @@ class RadioOperator:
                 sock.close()
             raise e
 
-    # # # # TCP AGENT # # # #
+    # # # # UDS AGENT # # # #
+    def _build_multicast_message(self, message):
+        transmit = DELIMITER.join([self.address, message]).encode("ascii")
+        return transmit
 
-    def _process_tcp_message(self, data):
+    def _process_uds_message(self, data):
         data = data.decode("ascii")
-        logger.debug("Received \"{msg}\" from TCP.".format(msg = data))
+        logger.debug("Received \"{msg}\" from UDS.".format(msg = data))
         info = data.split(DELIMITER)
         header = info[0]
         body = None
@@ -179,16 +190,16 @@ class RadioOperator:
             try:
                 data = connection.recv(BUFFER_SIZE)
                 if(data):
-                    header, body, footer = self._process_tcp_message(data)
+                    header, body, footer = self._process_uds_message(data)
                     if(header.endswith("SND")):
                         # Either LOCAL ("LSND") or GLOBAL ("GSND")
                         # New Event #
                         # Append to Event List
-                        logger.debug("Fired event {cmd}".format(cmd=body))
+                        logger.debug("Fired event {evt}".format(evt = body))
                         self.get_event(body).fire()
                         if(header.startswith("G")):
                             # Notify the world
-                            msg = self._build_transmit(body)
+                            msg = self._build_multicast_message(body)
                             logger.debug("Appending \"{msg}\" to outbound queue".format(
                                 msg = msg.decode("ascii")
                             ))
@@ -203,16 +214,22 @@ class RadioOperator:
                         connection.sendall(ACK)
                     connection.sendall(EOT)
             except:
-                logger.error("Handling of connection failed. Connection might be lost.")
+               logger.error("Handling of connection failed. Connection might be lost.")
 
     def Agent(self):
-        logger.debug("Trying to setup TCPSocket.")
+        logger.debug("Trying to setup UNIX socket.")
+        # Remove UNIX Socket if it exists
         try:
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            sock.bind(("127.0.0.1", TCP_PORT))
+            os.unlink(SOCKET_ADDRESS)
+        except OSError:
+            if os.path.exists(SOCKET_ADDRESS):
+                raise
+
+        try:
+            sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+            sock.bind(SOCKET_ADDRESS)
             sock.listen()
-            logger.info("TCPSocket setup successfully.")
+            logger.info("UDS setup successfully.")
             while(self.RUN):
                 connection, _ = sock.accept()
                 client_thread = threading.Thread(
@@ -246,10 +263,6 @@ class RadioOperator:
         else:
             raise ValueError("Unknown thread name. Possible names: AGENT, TRANSCEIVER")
 
-    def _build_transmit(self, message):
-        transmit = DELIMITER.join([self.address, message]).encode("ascii")
-        return transmit
-
     def __init__(self):
         self.address = str(uuid.uuid4())
         self.RUN = True
@@ -275,8 +288,8 @@ def _send_bytes(bytes):
                 bs = BUFFER_SIZE
             ))
         try:
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                s.connect(("127.0.0.1", TCP_PORT))
+            with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as s:
+                s.connect(SOCKET_ADDRESS)
                 s.sendall(bytes)
                 response = s.recv(BUFFER_SIZE)
                 while(response[-3:] != EOT):
@@ -304,7 +317,8 @@ def _check_validity(name):
             ))
     return
 
-def broadcast(event, local = False):
+def publish(event, local = False):
+    _check_validity(event)
     if(local):
         header = "LSND"
     else:
@@ -315,28 +329,23 @@ def broadcast(event, local = False):
         logger.error("No Acknowledgement has been received from server.")
     return
 
-def command(event, local = False):
-    _check_validity(event)
-    broadcast(event, local = local)
-
 def get_peers():
     response = _send_bytes("PEERS".encode("ascii"))
     return _decode_obj(response)
 
-def _run_on_command(cmd, fun):
+def _run_on_event(evt, fun):
     header = "WAIT"
-    msg = header + DELIMITER + cmd.upper()
+    msg = header + DELIMITER + evt.upper()
     msg = msg.encode("ascii")
     while(True):
         response = _send_bytes(msg)
         if(response == ACK):
             fun()
 
-
-def on_command(cmd, fun):
-    _check_validity(cmd)
-    logger.debug("Waiting for command {cmd}.".format(cmd = cmd))
-    wait_thread = threading.Thread(target=_run_on_command, args=(cmd, fun), daemon = True)
+def subscribe(evt, fun):
+    _check_validity(evt)
+    logger.debug("Waiting for event {evt}.".format(evt = evt))
+    wait_thread = threading.Thread(target=_run_on_event, args=(evt, fun), daemon = True)
     wait_thread.start()
 
 if __name__ == "__main__":
