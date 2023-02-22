@@ -1,8 +1,8 @@
 #!/home/pi/venvs/photobox/bin/python
-import networking
+
+import ipc
 import subprocess
-import os
-import logging
+
 import assets.tools
 import time
 from xmlrpc.client import ServerProxy
@@ -28,7 +28,14 @@ def supervisor_get_process_info(proc = None):
 def supervsior_get_log(name):
     return server.supervisor.readProcessStderrLog(name, 0, 0)
 
-if __name__ == "__main__":
-    networking.on_command("SHUTDOWN", shutdown)
-    print(supervsior_get_log("flask"))
 
+if __name__ == "__main__":
+    #networking.on_command("SHUTDOWN", shutdown)
+    #print(supervsior_get_log("flask"))
+
+    handler = print
+    messenger = ipc.Messenger()
+    messenger.subscribe("test", handler)
+    while(True):
+        messenger.publish("test", str(time.time()))
+        time.sleep(1)
