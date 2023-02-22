@@ -75,10 +75,11 @@ class Multicaster:
             logger.info("MultiCastSocket setup successfully.")
             messenger = ipc.Messenger()
             messenger.subscribe("", self.multicast, mode = "global")
-            success, received = self._operate_MultiCastSocket()
-            print(received[1][0])
-            if(success):
-                messenger.publish(received[0])
+            while(True):
+                success, received = self._operate_MultiCastSocket()
+                print(received[1][0])
+                if(success):
+                    messenger.send(received[0])
         except Exception as e:
             if(self.sock is not None):
                 self.sock.close()

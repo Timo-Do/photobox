@@ -24,7 +24,11 @@ class Messenger():
         if(local):
             mode = "L"
         transmit = mode + DELIMITER + topic + DELIMITER + message
-        self.publisher.send(transmit.encode(ENCODING))
+        self.send(transmit.encode(ENCODING))
+        
+    def send(self, transmit):
+        self.publisher.send(transmit)
+
 
     def _waiter_thread(self, topic, callback, loc, glob):
         subscriber = context.socket(zmq.SUB)
