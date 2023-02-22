@@ -24,13 +24,13 @@ class Messenger():
         if(local):
             mode = "L"
         transmit = mode + DELIMITER + topic + DELIMITER + message
-        self.send(transmit.encode(ENCODING))
-        
-    def send(self, transmit):
+        self.publish_raw(transmit.encode(ENCODING))
+
+    def publish_raw(self, transmit):
         self.publisher.send(transmit)
 
 
-    def _waiter_thread(self, topic, callback, loc, glob):
+    def _waiter_thread(self, topic, callback, loc, glob, return_raw):
         subscriber = context.socket(zmq.SUB)
         subscriber.connect("ipc://" + PUB_SOCKET)
         if(loc):
@@ -40,16 +40,19 @@ class Messenger():
             topic_global = "G" + DELIMITER + topic
             subscriber.setsockopt(zmq.SUBSCRIBE, topic_global.encode(ENCODING))
         while True:
-            transmit = subscriber.recv().decode(ENCODING)
-            # transmit consists of:
-            # M : TOPIC : MESSAGE
-            # with M = {L/G} (local or global mode)
-            idx_start = 2   # start looking after the first Delimiter (":")
-            delim_index = transmit.find(DELIMITER, idx_start) + 1
-            callback(transmit[delim_index:])
+            transmit = subscriber.recv()
+            if(return_raw):
+                callback(transmit)
+            else:
+                # transmit consists of:
+                # M : TOPIC : MESSAGE
+                # with M = {L/G} (local or global mode)
+                idx_start = 2   # start looking after the first Delimiter (":")
+                delim_index = transmit.decode(ENCODING).find(DELIMITER, idx_start) + 1
+                callback(transmit[delim_index:])
 
 
-    def subscribe(self, topic, callback, mode = "both"):
+    def subscribe(self, topic, callback, mode = "both", return_raw = False):
         if(mode == "both"):
             loc = True
             glob = True
@@ -64,7 +67,7 @@ class Messenger():
                 m = mode
             ))
 
-        thread = threading.Thread(target = self._waiter_thread, args = (topic, callback, loc, glob), daemon = True)
+        thread = threading.Thread(target = self._waiter_thread, args = (topic, callback, loc, glob, return_raw), daemon = True)
         thread.start()
         return thread
 

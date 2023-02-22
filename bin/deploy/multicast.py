@@ -15,6 +15,13 @@ REFRESH_RATE = 0.01
 
 logger = assets.tools.get_logger("MULTICAST")
 
+def get_ip():
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.connect((MULTICAST_IP, MULTICAST_PORT))
+    ip = s.getsockname()[0]
+    s.close()
+    return ip
+
 class Multicaster:
     def _get_MultiCastSocket(self):
         try:
@@ -55,13 +62,14 @@ class Multicaster:
         else:
             return success, received
 
-    def multicast(self, message):
-        print("sending ...." + message)
-        success = self._operate_MultiCastSocket(message.encode("ascii"))
+    def multicast(self, transmit):
+        print("sending ...." + transmit.decode("ascii"))
+        success = self._operate_MultiCastSocket(transmit)
         if(not success):
             logger.error("Failed to write to Multicast socket.")
 
     def __init__(self):
+        interface_ip = get_ip()
         self.sock = None
         try:
             logger.debug("Trying to setup MultiCastSocket.")
@@ -74,12 +82,12 @@ class Multicaster:
                     time.sleep(WAIT_BEFORE_RETRY)
             logger.info("MultiCastSocket setup successfully.")
             messenger = ipc.Messenger()
-            messenger.subscribe("", self.multicast, mode = "global")
+            messenger.subscribe("", self.multicast, mode = "global", return_raw = True)
             while(True):
                 success, received = self._operate_MultiCastSocket()
-                print(received[1][0])
-                if(success):
-                    messenger.send(received[0])
+                sender_ip = received[1][0]
+                if(success and sender_ip != interface_ip):
+                    messenger.publish_raw(received[0])
         except Exception as e:
             if(self.sock is not None):
                 self.sock.close()

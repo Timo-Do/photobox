@@ -2,7 +2,7 @@
 
 import ipc
 import subprocess
-
+from multicast import get_ip
 import assets.tools
 import time
 from xmlrpc.client import ServerProxy
@@ -38,4 +38,5 @@ if __name__ == "__main__":
     messenger.subscribe("test", handler)
     while(True):
         messenger.publish("test", str(time.time()))
+        print(get_ip())
         time.sleep(1)
