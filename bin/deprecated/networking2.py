@@ -18,6 +18,7 @@ TCP_PORT = 10001
 BUFFER_SIZE = 1024
 WAIT_BEFORE_RETRY = 10
 REFRESH_RATE = 0.01
+HEART_RATE = 1
 MAX_NAME_LEN = 32
 DELIMITER = ":"
 
@@ -29,6 +30,7 @@ ERR = "ERR".encode("ascii")
 YES = "YES".encode("ascii")
 NO = "NO".encode("ascii")
 EOT = "EOT".encode("ascii")
+PULSE = "BEEP".encode("ascii")
 
 class Event(threading.Event):
     def fire(self):
@@ -48,6 +50,7 @@ class RadioOperator:
 
     THREADLIST = ["TRANSCEIVER", "AGENT"]
     THREADS = {}
+
 
     def get_event(self, name):
         with self.EVENTS_LOCK:
@@ -206,15 +209,18 @@ class RadioOperator:
                             with self.OUTBOUND_LOCK:
                                 self.OUTBOUND.append(msg)
                             self.OUTBOUND_EVENT.fire()
-                        connection.sendall(ACK)
+                        connection.sendall(ACK + EOT)
                     if(header == "PEERS"):
-                        connection.sendall(_encode_obj(self.PEERS))
+                        connection.sendall(_encode_obj(self.PEERS) + EOT)
                     if(header == "WAIT"):
-                        self.get_event(body).wait()
-                        connection.sendall(ACK)
-                    connection.sendall(EOT)
+                        fired = False
+                        while(not fired):
+                            connection.sendall(PULSE)
+                            fired = self.get_event(body).wait(timeout = HEART_RATE)
+                        connection.sendall(ACK + EOT)      
             except:
                logger.error("Handling of connection failed. Connection might be lost.")
+
 
     def Agent(self):
         logger.debug("Trying to setup UNIX socket.")
@@ -235,10 +241,11 @@ class RadioOperator:
                 client_thread = threading.Thread(
                     target=self._handle_connection,
                     args=(connection,),
-                    daemon = True)
+                    daemon=True)
                 client_thread.start()
                    
         except Exception as e:
+            self.RUN = False
             raise e
         finally:
             sock.close()
@@ -281,23 +288,37 @@ class RadioOperator:
         watcher = threading.Thread(target=self.Watcher, args=())
         watcher.start()
 
-def _send_bytes(bytes):
+def _send_bytes(bytestring, object = False):
     try:
-        if(len(bytes) > BUFFER_SIZE):
+        if(len(bytestring) > BUFFER_SIZE):
             raise ValueError("Argument \"bytes\" may not be bigger than the set BUFFER_SIZE ({bs})".format(
                 bs = BUFFER_SIZE
             ))
         try:
             with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as s:
+                s.settimeout(2 * HEART_RATE)
                 s.connect(SOCKET_ADDRESS)
-                s.sendall(bytes)
-                response = s.recv(BUFFER_SIZE)
-                while(response[-3:] != EOT):
-                    response += s.recv(BUFFER_SIZE)
-                response = response[:-3]
+                s.sendall(bytestring)
+                received_bytes = bytes()
+                response = bytes()
+                while(received_bytes[-3:] != EOT):
+                    received_bytes = s.recv(BUFFER_SIZE)
+                    if(len(received_bytes) == 0):
+                        logger.error("Connection broke.")
+                        return False
+                    if(object):
+                        response += received_bytes
+                    else:
+                        if(response.find(ACK) < 0):
+                            response = ACK
+
+                if(object):
+                    response = _decode_obj(response[:-len(EOT)] ) 
+                
         except ConnectionRefusedError:
-            logger.warning("Connection to TCPSocket refused")
+            logger.warning("Connection to UDS refused")
             response = False
+
         return response
     except Exception as e:
         logger.error("Failed to send bytes: " + str(e))
@@ -330,8 +351,8 @@ def publish(event, local = False):
     return
 
 def get_peers():
-    response = _send_bytes("PEERS".encode("ascii"))
-    return _decode_obj(response)
+    response = _send_bytes("PEERS".encode("ascii"), object = True)
+    return response
 
 def _run_on_event(evt, fun):
     header = "WAIT"
@@ -341,6 +362,10 @@ def _run_on_event(evt, fun):
         response = _send_bytes(msg)
         if(response == ACK):
             fun()
+        else:
+            time.sleep(HEART_RATE)
+
+
 
 def subscribe(evt, fun):
     _check_validity(evt)
