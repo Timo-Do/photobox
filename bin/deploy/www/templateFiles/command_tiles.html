@@ -4,8 +4,8 @@
 <section class="tile-layout">
     {% for command in commands %}
     <div class="tile" onclick="Exec('{{command['cmd']}}')">
-        <div class="title">{{command['title']}}</div>
-        <div class="subtitle">{{command['subtitle']}}</div>
+        <div class="center title">{{command['title']}}</div>
+        <div class="center subtitle">{{command['subtitle']}}</div>
     </div>
     {% endfor %}
 </section>

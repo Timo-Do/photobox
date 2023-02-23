@@ -32,6 +32,12 @@ body {
     gap: 8px;
     margin-bottom: 8px;
 }
+.log-field {
+    margin-bottom: 8px;
+    font-family: monospace;
+    padding-left: 1em;
+    font-size: 26px;
+}
 
 .tile {
     align-items: center;
@@ -54,8 +60,6 @@ body {
     font-size: 120px;
     color: darkred;
     height: 145px;
-    text-align: center;
-    vertical-align: middle;
     line-height: 145px; 
     font-family: 'Sallita';
 }
@@ -63,10 +67,15 @@ body {
     font-size: 32px;
     color: darkred;
     font-family: 'Roboto';
+}
+.center {
     text-align: center;
+    vertical-align: middle;
 }
 .info {
+    font-size: 64px;
     font-family: 'Roboto';
+    color: black;
 }
 .row {
     display:flex;
@@ -74,6 +83,7 @@ body {
 }
 .rowLeft {
     text-align: left;
+    flex-grow: 1;
     margin-left: 1em;
 }
 .rowRight {

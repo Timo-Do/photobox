@@ -2,11 +2,16 @@
 
 {% block content %}
 <section class="row-layout">
+    <a href="">
+        <div class="tile">
+            <div class="center title">Prozesse</div>
+        </div>
+    </a>
     {% for elem in elems %}
     <a href="{{ url_for(elem['route'], proc=elem['name']) }}">
         <div class="tile row">
-            <div class="title rowLeft">{{elem['name']}}</div>
-            <div class="title rowRight subtitle" style="color: {{elem['color']}};">{{elem['state']}}</div>
+            <div class="center title rowLeft">{{elem['name']}}</div>
+            <div class="center title rowRight info" style="color: {{elem['color']}};">{{elem['state']}}</div>
         </div>
     </a>
     {% endfor %}
