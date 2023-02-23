@@ -25,18 +25,14 @@ def supervisor_get_process_info(proc = None):
     else:
         return server.supervisor.getProcessInfo(proc)
 
-def supervsior_get_log(name):
-    return server.supervisor.readProcessStderrLog(name, 0, 0)
+def supervisor_get_process_log(name):
+    try:
+        log = server.supervisor.readProcessStderrLog(name, 0, 0)
+    except:
+        log = "Kein Log vorhanden!"
+    log = log.replace("\n", "<br />")
+    return log
 
 
 if __name__ == "__main__":
-    #networking.on_command("SHUTDOWN", shutdown)
-    #print(supervsior_get_log("flask"))
-
-    handler = print
-    messenger = ipc.Messenger()
-    messenger.subscribe("test", handler)
-    while(True):
-        messenger.publish("test", str(time.time()))
-        print(get_ip())
-        time.sleep(1)
+    print(supervisor_get_process_log("multicast"))

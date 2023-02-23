@@ -1,24 +1,21 @@
 #!/home/pi/venvs/photobox/bin/python
 import assets.config
-import assets.tools
+import assets.tools as tools
 
 import cv2
 import os
 import random
 import glob
 import sys
-import networking
+import ipc
 import time
 
 os.environ["DISPLAY"] = ":0.0"
 
-logger = assets.tools.get_logger("SLIDESHOW")
+logger = tools.get_logger("SLIDESHOW")
 config = assets.config.load()
 DIR = os.path.dirname(os.path.realpath(sys.argv[0]))
 REACTION_TIME = 0.1
-
-def subtract_lists(list1, list2):
-    return list(set(list1) - set(list2))
 
 class Slideshow():
 
@@ -103,7 +100,7 @@ class Slideshow():
                 logger.debug("No images found in directory.")
                 list_to_pick_from = self.get_default_image_list()
             else: 
-                brand_new_images = subtract_lists(new_image_list, self.last_image_list)
+                brand_new_images = tools.subtract_lists(new_image_list, self.last_image_list)
                 if(not brand_new_images):
                     logger.debug("Found no new images in directory.")
                     list_to_pick_from = new_image_list
@@ -117,8 +114,8 @@ class Slideshow():
 
         return list_to_pick_from
     
-    def toggle(self):
-        logger.debug("New TOGGLESCREEN command received.")
+    def toggle(self, message):
+        logger.debug("New TOGGLESCREEN command received from {s}.".format(s = message))
         if(self.running):
             logger.debug("Switching off display")
         else:
@@ -130,13 +127,13 @@ class Slideshow():
         logger.debug("Initializing window.")
         cv2.namedWindow(self.SCREEN_NAME, cv2.WND_PROP_FULLSCREEN)
         cv2.setWindowProperty(self.SCREEN_NAME,cv2.WND_PROP_FULLSCREEN,cv2.WINDOW_FULLSCREEN)
-        logger.debug("Loading image list.")
+        logger.info("Setting up IPC.")
+        self.messenger = ipc.Messenger()
+        self.messenger.subscribe("TOGGLESCREEN", self.toggle)
         logger.debug("Starting up initial Screensaver.")
         default_image_path = self.get_random_default_image_path()
         default_image = self.load_image(default_image_path)
         self.show_image(default_image, self.running)
-        logger.debug("Starting up Watcher.")
-        networking.on_command("TOGGLESCREEN", self.toggle)
         self._main_loop()
 
     def _main_loop(self):
@@ -144,7 +141,7 @@ class Slideshow():
         while(True):
             state = self.running
             list_to_pick_from = self.get_list_to_pick_from(state = state)
-            unseen_images = subtract_lists(list_to_pick_from, self.seen_image_list)
+            unseen_images = tools.subtract_lists(list_to_pick_from, self.seen_image_list)
             if(not unseen_images):
                 logger.debug("All pictures have been shown, beginning new set.")
                 self.seen_image_list = []

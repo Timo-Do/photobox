@@ -1,8 +1,9 @@
 #!/home/pi/venvs/photobox/bin/python
 import RPi.GPIO as GPIO
 import time
-import networking
+import ipc
 import assets.config
+import assets.tools as tools
 
 class Functionality():
     enabled = True
@@ -19,19 +20,20 @@ class Functionality():
     def enable(self):
         self.enabled = True
 
-logger = assets.tools.get_logger("IO")
+logger = tools.get_logger("IO")
 config = assets.config.load()
+messenger = ipc.Messenger()
 
 input_funcs = {}
 
 if(config["IO"]["Slideshow_Toggle"]):
     input_funcs["Slideshow Toggle"] = Functionality(
-        lambda : networking.command("TOGGLESCREEN"),
+        lambda : messenger.publish("TOGGLESCREEN", "Button"),
         [config["GPIOs"]["Slideshow_Toggle"]])
 
 if(config["IO"]["Shutdown"]):   
     input_funcs["Shutdown"] = Functionality(
-            lambda : networking.command("SHUTDOWN"),
+            lambda : messenger.publish("SHUTDOWN", "Button"),
             [config["GPIOs"]["Shutdown_left"], config["GPIOs"]["Shutdown_right"]],
             ticks = 30)
 

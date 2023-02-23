@@ -24,3 +24,12 @@ def get_logger(appname):
 
     
     return logger
+
+def subtract_lists(list1, list2):
+    return list(set(list1) - set(list2))
+
+def seconds2hms(sec):
+    hours, remainder = divmod(sec, 60 * 60)
+    minutes, seconds = divmod(remainder,60)
+    return "{:02d}:{:02d}:{:02d}".format(hours, minutes, seconds)
+

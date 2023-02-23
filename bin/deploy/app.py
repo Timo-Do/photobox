@@ -1,9 +1,18 @@
 #!/home/pi/venvs/photobox/bin/python
 import flask
-import networking
-import housekeeping
+import ipc
+import secretary
+import datetime
+from assets import tools
 
+messenger = ipc.Messenger()
 app = flask.Flask(__name__, template_folder="www/templateFiles", static_folder="www/staticFiles")
+
+STATE_COLORS = {
+    "FATAL"         : "red",
+    "RUNNING"       : "green",
+    "RESTARTING"    : "orange"
+}
 
 @app.route("/")
 def index():
@@ -33,7 +42,7 @@ def commands():
         },
         {
             "title"     : "Bye!",
-            "subtitle"  : "Fährt das System herunter.",
+            "subtitle"  : "Fahre das System herunter.",
             "cmd"       : "shutdown"
         }
     ]
@@ -41,49 +50,68 @@ def commands():
 
 @app.route("/procs")
 def procs():
-    state_colors = {
-        "FATAL"         : "red",
-        "RUNNING"       : "green",
-        "RESTARTING"    : "orange"
-    }
-    procs = housekeeping.supervisor_get_process_info()
+
+    procs = secretary.supervisor_get_process_info()
     elems = []
     for proc in procs:
         elems.append({
             "name"      :   proc["name"],
             "state"     :   proc["statename"],
-            "color"     :   state_colors.get(proc["statename"], "black"),
+            "color"     :   STATE_COLORS.get(proc["statename"], "black"),
             "route"     :   "proc_info",
         })
     return flask.render_template("process_rows.html", elems=elems, ret="index")
 
 @app.route("/proc_info/<proc>")
-def proc_info(proc = None):
-    state_colors = {
-        "FATAL"         : "red",
-        "RUNNING"       : "green",
-        "RESTARTING"    : "orange"
+def proc_info(proc):
+    procname = proc
+    proc = secretary.supervisor_get_process_info(proc)
+    uptime = ""
+    startname = "An!"
+    startsubtitle = "Starte das Programm."
+    terminate = ""
+    if(proc["state"] == 20):
+        uptime = tools.seconds2hms(proc["now"] - proc["start"])
+        startname = "Mach Neu!"
+        startsubtitle = "Starte das Programm erneut."
+        terminate = "Aus!"
+    proc_infos = {
+        "name"          : procname,
+        "state"         : proc["statename"],
+        "statecolor"    : STATE_COLORS.get(proc["statename"], "black"),
+        "uptime"        : uptime,
+        "pid"           : proc["pid"],
+        "startname"     : startname,
+        "startsub"      : startsubtitle,
+        "terminate"     : terminate
     }
-    procs = housekeeping.supervisor_get_process_info(proc)
-    elems = [{
-            "name"      :   "Test",
-            "state"     :   "Test",
-            "color"     :   "red",
-            "route"     :   "index"
-        }]
 
-    return flask.render_template("process_infos.html", elems=elems, ret="index")
+    return flask.render_template("process_infos.html", proc_infos=proc_infos, ret="procs")
+
+@app.route("/proc_log/<proc>")
+def proc_log(proc):
+    procname = proc
+    log = secretary.supervisor_get_process_log(proc)
+
+    return flask.render_template("process_log.html", procname=procname, log=log, ret="procs")
+
+@app.route("/proc_cmd/<proc>/<cmd>")
+def proc_cmd(proc, cmd):
+    print(proc)
+    print(cmd)
+    return ""
 
 @app.route("/toggle")
 def toggle():
-    networking.command("TOGGLESCREEN")
+    messenger.publish("TOGGLESCREEN", "Website")
     return ""
 
 @app.route("/shutdown")
 def shutdown():
-    networking.command("SHUTDOWN")
+    messenger.publish("SHUTDOWN", "Website")
     return ""
 
 
 if(__name__ == "__main__"):
+    
     app.run(debug = True, host="0.0.0.0", port=80)
