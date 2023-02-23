@@ -82,12 +82,12 @@ class Multicaster:
                     time.sleep(WAIT_BEFORE_RETRY)
             logger.info("MultiCastSocket setup successfully.")
             messenger = ipc.Messenger()
-            messenger.subscribe("", self.multicast, mode = "global", return_raw = True)
+            messenger.subscribe("", self.multicast, channels = ipc.CHANNELS.OUTBOUND, return_raw = True)
             while(True):
                 success, received = self._operate_MultiCastSocket()
                 sender_ip = received[1][0]
                 if(success and sender_ip != interface_ip):
-                    messenger.publish_raw(received[0])
+                    messenger.publish_raw(ipc.CHANNELS.INBOUND + received[0][1:])
         except Exception as e:
             if(self.sock is not None):
                 self.sock.close()

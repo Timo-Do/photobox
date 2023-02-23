@@ -8,6 +8,15 @@ from assets.tools import get_logger
 
 logger = get_logger("IPC")
 
+__all__ = ["CHANNELS", "Messenger"]
+
+class CHANNELS():
+    INBOUND = "I"
+    OUTBOUND = "O"
+    LOCAL = "L"
+    ALL = INBOUND + OUTBOUND + LOCAL
+    INTERNAL = LOCAL + OUTBOUND
+
 context = zmq.Context()
 SUB_SOCKET = "/tmp/SUB"
 PUB_SOCKET = "/tmp/PUB"
@@ -30,44 +39,24 @@ class Messenger():
         self.publisher.send(transmit)
 
 
-    def _waiter_thread(self, topic, callback, loc, glob, return_raw):
+    def _waiter_thread(self, topic, callback, channels, return_raw):
         subscriber = context.socket(zmq.SUB)
         subscriber.connect("ipc://" + PUB_SOCKET)
-        if(loc):
-            topic_local = "L" + DELIMITER + topic
-            subscriber.setsockopt(zmq.SUBSCRIBE, topic_local.encode(ENCODING))
-        if(glob):
-            topic_global = "G" + DELIMITER + topic
-            subscriber.setsockopt(zmq.SUBSCRIBE, topic_global.encode(ENCODING))
+        for channel in channels:
+            subscriber.setsockopt(zmq.SUBSCRIBE, (channel + topic).encode(ENCODING))
         while True:
             transmit = subscriber.recv()
             if(return_raw):
                 callback(transmit)
             else:
-                # transmit consists of:
-                # M : TOPIC : MESSAGE
-                # with M = {L/G} (local or global mode)
-                idx_start = 2   # start looking after the first Delimiter (":")
-                delim_index = transmit.decode(ENCODING).find(DELIMITER, idx_start) + 1
+                transmit = transmit.decode(ENCODING)
+                delim_index = transmit.find(DELIMITER) + 1
                 callback(transmit[delim_index:])
 
 
-    def subscribe(self, topic, callback, mode = "both", return_raw = False):
-        if(mode == "both"):
-            loc = True
-            glob = True
-        elif(mode == "local"):
-            loc = True
-            glob = False
-        elif(mode == "global"):
-            loc = False
-            glob = True
-        else:
-            raise ValueError("Argument 'mode' was set to {m} but can only take on 'both', 'local' or 'global'.".format(
-                m = mode
-            ))
-
-        thread = threading.Thread(target = self._waiter_thread, args = (topic, callback, loc, glob, return_raw), daemon = True)
+    def subscribe(self, topic, callback, channels = CHANNELS.ALL, return_raw = False):
+        thread = threading.Thread(target = self._waiter_thread,
+            args = (topic, callback, channels, return_raw), daemon = True)
         thread.start()
         return thread
 
