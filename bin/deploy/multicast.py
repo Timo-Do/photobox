@@ -46,11 +46,11 @@ class Multicaster:
         received = bytes()
         try:
             if(send):
-                logger.debug("Sending \"{msg}\" to MultiCast.".format(msg = send.decode("ascii")))
+                logger.debug("Sending \"{msg}\" to MultiCast.".format(msg = send.decode(ipc.ENCODING)))
                 self.sock.sendto(send, MULTICAST)
             else:
                 received = self.sock.recvfrom(BUFFER_SIZE)
-                logger.debug("Received \"{msg}\" from MultiCast.".format(msg = received[0].decode("ascii")))
+                logger.debug("Received \"{msg}\" from MultiCast.".format(msg = received[0].decode(ipc.ENCODING)))
             success = True
         except OSError as e:
             if(e.args[0] == 101):
@@ -63,7 +63,6 @@ class Multicaster:
             return success, received
 
     def multicast(self, transmit):
-        print("sending ...." + transmit.decode("ascii"))
         success = self._operate_MultiCastSocket(transmit)
         if(not success):
             logger.error("Failed to write to Multicast socket.")
@@ -87,7 +86,7 @@ class Multicaster:
                 success, received = self._operate_MultiCastSocket()
                 sender_ip = received[1][0]
                 if(success and sender_ip != interface_ip):
-                    messenger.publish_raw(ipc.CHANNELS.INBOUND + received[0][1:])
+                    messenger.publish_raw(ipc.CHANNELS.INBOUND.encode(ipc.ENCODING) + received[0][1:])
         except Exception as e:
             if(self.sock is not None):
                 self.sock.close()

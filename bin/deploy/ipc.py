@@ -8,7 +8,6 @@ from assets.tools import get_logger
 
 logger = get_logger("IPC")
 
-__all__ = ["CHANNELS", "Messenger"]
 
 class CHANNELS():
     INBOUND = "I"
@@ -28,11 +27,10 @@ class Messenger():
         self.publisher = context.socket(zmq.PUB)
         self.publisher.connect("ipc://" + SUB_SOCKET)
 
-    def publish(self, topic, message, local = False):
-        mode = "G"
-        if(local):
-            mode = "L"
-        transmit = mode + DELIMITER + topic + DELIMITER + message
+    def publish(self, topic, message, channel = CHANNELS.OUTBOUND):
+        if(len(channel) != 1):
+            raise ValueError("Argument 'channel' can only take character.")
+        transmit = channel + topic + DELIMITER + message
         self.publish_raw(transmit.encode(ENCODING))
 
     def publish_raw(self, transmit):
