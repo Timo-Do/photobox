@@ -16,77 +16,147 @@ STATE_COLORS = {
 
 @app.route("/")
 def index():
-    navs = [
-        {
-            "title"     :   "Befehle",
-            "target"    :   "commands" 
+    title = "...."
+    sections = [{
+        "sectiontype"   : "rows",
+        "elems"         : [{
+            "href"  : flask.url_for("commands"),
+            "labels": [{
+                "text" : "Befehle",
+                "class": "title rowLeft",
+                "style": ""
+            },{
+                "text" : ">",
+                "class": "info rowRight"
+            }]
         },{
-            "title"     :   "Prozesse",
-            "target"    :   "procs" 
-        }
-    ]
-    return flask.render_template("navigation_rows.html", navs=navs)
+            "href"  : flask.url_for("procs"),
+            "labels": [{
+                "text" : "Prozesse",
+                "class": "title rowLeft",
+                "style": ""
+            },{
+                "text" : ">",
+                "class": "info rowRight",
+                "style": ""
+            }]
+        }]
+    }]
+    return flask.render_template("standard_page.html", sections=sections, title=title)
 
 @app.route("/commands")
 def commands():
-    commands = [
-        {
+    title = "Befehle"
+    sections = [{
+        "sectiontype"   : "tiles",
+        "elems"         : [{
+            "onclick"   : f"Exec('toggle')",
             "title"     : "Husch!",
-            "subtitle"  : "Schalte die Slideshow um.",
-            "cmd"       : "toggle"
-        },
-        {
+            "subtitle"  : "Schalte die Slideshow um."
+        },{
+            "onclick"   : f"Exec('shutter')",
             "title"     : "Snap!",
-            "subtitle"  : "Schieße ein Photo.",
-            "cmd"       : "shutter"
-        },
-        {
+            "subtitle"  : "Schieße ein Photo."
+        },{
+            "onclick"   : f"Exec('countdown')",
+            "title"     : "3..2..1..",
+            "subtitle"  : "Starte den Countdown."
+        },{
+            "onclick"   : f"Exec('shutdown')",
             "title"     : "Bye!",
-            "subtitle"  : "Fahre das System herunter.",
-            "cmd"       : "shutdown"
-        }
-    ]
-    return flask.render_template("command_tiles.html", commands = commands, ret="index")
+            "subtitle"  : "Fahre das System herunter."
+        }]
+    }]
+
+    return flask.render_template("standard_page.html", sections=sections, title=title, ret="index")
 
 @app.route("/procs")
 def procs():
-
+    title = "Prozesse"
     procs = secretary.supervisor_get_process_info()
     elems = []
     for proc in procs:
         elems.append({
-            "name"      :   proc["name"],
-            "state"     :   proc["statename"],
-            "color"     :   STATE_COLORS.get(proc["statename"], "black"),
-            "route"     :   "proc_info",
+            "href"  : flask.url_for("proc_info", proc=proc["name"]),
+            "labels": [{
+                "text" : proc["name"],
+                "class": "title rowLeft",
+                "style": ""
+            },{
+                "text" : proc["statename"],
+                "class": "info rowRight",
+                "style": "color : " + STATE_COLORS.get(proc["statename"], "black")
+            }]
         })
-    return flask.render_template("process_rows.html", elems=elems, ret="index")
+    sections = [{
+        "sectiontype"   : "rows",
+        "elems"         : elems
+    }]
+
+    return flask.render_template("standard_page.html", sections=sections, title=title, ret="index")
 
 @app.route("/proc_info/<proc>")
 def proc_info(proc):
     procname = proc
     proc = secretary.supervisor_get_process_info(proc)
     uptime = ""
-    startname = "An!"
+    startttile = "An!"
     startsubtitle = "Starte das Programm."
-    terminate = ""
+    bRunning = False
     if(proc["state"] == 20):
+        bRunning = True
         uptime = tools.seconds2hms(proc["now"] - proc["start"])
-        startname = "Mach Neu!"
+        startttile = "Mach Neu!"
         startsubtitle = "Starte das Programm erneut."
-        terminate = "Aus!"
-    proc_infos = {
-        "name"          : procname,
-        "state"         : proc["statename"],
-        "statecolor"    : STATE_COLORS.get(proc["statename"], "black"),
-        "uptime"        : uptime,
-        "pid"           : proc["pid"],
-        "startname"     : startname,
-        "startsub"      : startsubtitle,
-        "terminate"     : terminate
-    }
+    sections = [{
+        "sectiontype"   : "rows",
+        "elems"         : [{
+            "href"  : "",
+            "labels": [{
+                "text" : "Status",
+                "class": "info rowLeft",
+                "style": ""
+            },{
+                "text" : proc["statename"],
+                "class": "info rowRight",
+                "style": "color : " + STATE_COLORS.get(proc["statename"], "black")
+            }]
+        },{
+            "href"  : "",
+            "labels": [{
+                "text" : "Uptime",
+                "class": "info rowLeft",
+                "style": ""
+            },{
+                "text" : uptime,
+                "class": "info rowRight"
+            }]
+        },{
+            "href"  : flask.url_for("proc_log", proc=procname),
+            "labels": [{
+                "text" : "Log",
+                "class": "info rowLeft",
+                "style": ""
+            },{
+                "text" : ">",
+                "class": "info rowRight"
+            }]
+        }]
+    },{
+        "sectiontype"   : "tiles",
+        "elems"         : [{
+            "onclick"   : f"Exec_Proc('{procname}', 'start')",
+            "title"     : startttile,
+            "subtitle"  : startsubtitle
+        },{
+            "onclick"   : f"Exec_Proc('{procname}', 'stop')" if bRunning else "",
+            "title"     : "Aus!",
+            "subtitle"  : "Beende das Programm.",
+            "style"     : "opacity : 1;" if bRunning else "opacity : 0.3;"
+        }]
+    }]
 
-    return flask.render_template("process_infos.html", proc_infos=proc_infos, ret="procs")
+    return flask.render_template("standard_page.html", sections=sections, title=procname, ret="procs")
 
 @app.route("/proc_log/<proc>")
 def proc_log(proc):

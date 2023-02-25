@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% block content %}
+<section class="row-layout">
+    <a href="">
+        <div class="tile">
+            <div class="center title">{{title}}</div>
+        </div>
+    </a>
+</section>
+{% for section in sections %}
+    <!-- section -->
+    {% if section["sectiontype"] == "rows" %}
+    <section class="row-layout">
+        {% for elem in section['elems'] %}
+            <!-- elem -->
+            {% if elem['href'] is defined %}
+            <a href="{{elem['href']}}">
+            {% else %}
+            <a>
+            {% endif %}
+                <div class="tile row">
+                {% for label in elem['labels'] %}
+                    <div class="{{label['class']}}" style="{{label['style']}}">{{label['text']}}</div>
+                {% endfor %}
+                </div>
+            </a>
+        {% endfor %}
+    </section>
+    {% elif section['sectiontype'] == "tiles" %}
+    <section class="tile-layout">
+        {% for elem in section['elems'] %}
+        <div class="tile" style="{{elem['style']}}" onclick="{{elem['onclick']}}">
+            <div class="center title">{{elem['title']}}</div>
+            <div class="center subtitle">{{elem['subtitle']}}</div>
+        </div>
+        {% endfor %}
+    </section>
+    {% endif %}
+
+{% endfor %}
+{% if ret is defined %}
+    {% include 'return_button.html' %}
+{% endif %}
+{% endblock %}
