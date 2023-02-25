@@ -16,10 +16,21 @@ REFRESH_RATE = 0.01
 logger = assets.tools.get_logger("MULTICAST")
 
 def get_ip():
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    s.connect((MULTICAST_IP, MULTICAST_PORT))
-    ip = s.getsockname()[0]
-    s.close()
+    success = False
+    while(not success):
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.connect((MULTICAST_IP, MULTICAST_PORT))
+            ip = s.getsockname()[0]
+            s.close()
+            success = True
+        except OSError as e:
+            if(e.args[0] == 19):
+                # Network unreachable
+                logger.error("Cannot get IP. Network is unreachable.")
+                time.sleep(WAIT_BEFORE_RETRY)
+            else:
+                raise e
     return ip
 
 class Multicaster:
