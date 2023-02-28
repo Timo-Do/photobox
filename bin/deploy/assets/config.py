@@ -24,17 +24,18 @@ config["Basic"] = {}
 config["Basic"]["Name"] = str
 config["Basic"]["Deployment"] = bool
 
-config["IO"] = {}
-config["IO"]["Slideshow_Toggle"] = bool
-config["IO"]["Shutdown"] = bool
-config["IO"]["Shutter"] = bool
+config["io"] = {}
+config["io"]["Slideshow_Toggle"] = bool
+config["io"]["Shutdown"] = bool
+config["io"]["Shutter"] = bool
+config["io"]["Status_LED"] = bool
 
 config["GPIOs"] = {}
 config["GPIOs"]["Slideshow_Toggle"] = int
 config["GPIOs"]["Shutdown_left"] = int
 config["GPIOs"]["Shutdown_right"] = int
 config["GPIOs"]["Shutter"] = int
-
+config["GPIOs"]["Status_LED"] = int
 config["SDCard"] = {}
 config["SDCard"]["Reaction_Time"] = float
 config["SDCard"]["MountPoint"] = str
