@@ -7,22 +7,23 @@
 
     <!--  Load JavaScript in Flask with html-->
     <head>  
-        <script type = "text/javascript">  
-            function Exec(cmd, reload){
+        <script type = "text/javascript">
+            
+            function Exec(cmd, reload = false){
                 var request = new XMLHttpRequest()
-                request.open("GET", "/" + cmd, true)
+                request.open("GET", "/publish/" + cmd, true)
                 request.send()
-                reload = (typeof optionalArg === true) ? false : optionalArg;
                 if(reload){
                     location.reload()
                 }
             }
             function Exec_Proc(proc, cmd){
                 var request = new XMLHttpRequest()
-                request.open("GET", "/proc_cmd/" + proc + "/" + cmd, true)
+                request.open("GET", "/proc_cmd/" + proc + "/" + cmd, false)
                 request.send()
                 location.reload()
             }
+
     </script>  
 
 </head>

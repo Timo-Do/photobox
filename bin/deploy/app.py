@@ -17,30 +17,30 @@ STATE_COLORS = {
 @app.route("/")
 def index():
     title = "...."
-    sections = [{
-        "sectiontype"   : "rows",
-        "elems"         : [{
-            "href"  : flask.url_for("commands"),
+    rows = [{
+        "text"  : "Befehle",
+        "url"   : "commands"
+    },{
+        "text"  : "Prozesse",
+        "url"   : "procs"
+    },{
+        "text"  : "Wifi",
+        "url"   : "wifi"
+    }]
+    elems = [{
+            "href"  : flask.url_for(row["url"]),
             "labels": [{
-                "text" : "Befehle",
+                "text" : row["text"],
                 "class": "title rowLeft",
                 "style": ""
             },{
                 "text" : ">",
                 "class": "info rowRight"
             }]
-        },{
-            "href"  : flask.url_for("procs"),
-            "labels": [{
-                "text" : "Prozesse",
-                "class": "title rowLeft",
-                "style": ""
-            },{
-                "text" : ">",
-                "class": "info rowRight",
-                "style": ""
-            }]
-        }]
+        } for row in rows]
+    sections = [{
+        "sectiontype"   : "rows",
+        "elems"         : elems
     }]
     return flask.render_template("standard_page.html", sections=sections, title=title)
 
@@ -95,6 +95,36 @@ def procs():
 
     return flask.render_template("standard_page.html", sections=sections, title=title, ret="index")
 
+@app.route("/wifi")
+def wifi():
+    title = "Wifi"
+    wifi_status = secretary.get_wifi()
+    rows = [{
+        "text"  :   "Download",
+        "value" :   wifi_status["rx bitrate"]
+    },{
+        "text"  :   "Upload",
+        "value" :   wifi_status["tx bitrate"]  
+    },{
+        "text"  :   "Signal Stärke",
+        "value" :   wifi_status["signal"]  
+    }]
+    sections = [{
+        "sectiontype"   : "rows",
+        "elems"         : [{
+            "href"  : "",
+            "labels": [{
+                "text" : row["text"],
+                "class": "info rowLeft",
+                "style": ""
+            },{
+                "text" : row["value"],
+                "class": "info rowRight"
+            }]
+        } for row in rows]
+    }]
+    return flask.render_template("standard_page.html", sections=sections, title=title, ret="index")
+
 @app.route("/proc_info/<proc>")
 def proc_info(proc):
     procname = proc
@@ -102,12 +132,14 @@ def proc_info(proc):
     uptime = ""
     startttile = "An!"
     startsubtitle = "Starte das Programm."
+    startcmd = "start"
     bRunning = False
     if(proc["state"] == 20):
         bRunning = True
         uptime = tools.seconds2hms(proc["now"] - proc["start"])
         startttile = "Mach Neu!"
         startsubtitle = "Starte das Programm erneut."
+        startcmd = "restart"
     sections = [{
         "sectiontype"   : "rows",
         "elems"         : [{
@@ -145,7 +177,11 @@ def proc_info(proc):
     },{
         "sectiontype"   : "tiles",
         "elems"         : [{
-            "onclick"   : f"Exec_Proc('{procname}', 'start')",
+            "onclick"   : f"Exec_Proc('{procname}', 'clearlog')",
+            "title"     : "Putzen bitte!",
+            "subtitle"  : "Lösche den Log."
+        } if bRunning else None,{
+            "onclick"   : f"Exec_Proc('{procname}', '{startcmd}')",
             "title"     : startttile,
             "subtitle"  : startsubtitle
         },{
@@ -167,18 +203,23 @@ def proc_log(proc):
 
 @app.route("/proc_cmd/<proc>/<cmd>")
 def proc_cmd(proc, cmd):
-    print(proc)
-    print(cmd)
+    if cmd in ["start", "restart", "stop"]:
+        secretary.supervisor_processcontrol(proc, cmd)
+    elif(cmd == "clearlog"):
+        secretary.supervisor_empty_log(proc)
+
     return ""
 
-@app.route("/toggle")
-def toggle():
-    messenger.publish("TOGGLESCREEN", "Website")
-    return ""
-
-@app.route("/shutdown")
-def shutdown():
-    messenger.publish("SHUTDOWN", "Website")
+@app.route("/publish/<cmd>")
+def publish(cmd):
+    if(cmd == "toggle"):
+        messenger.publish("TOGGLESCREEN", "Website")
+    elif(cmd == "shutdown"):
+        messenger.publish("SHUTDOWN", "Website")
+    elif(cmd == "countdown"):
+        messenger.publish("COUNTDOWN")
+    elif(cmd == "shutter"):
+        messenger.publish("SHUTTER")
     return ""
 
 

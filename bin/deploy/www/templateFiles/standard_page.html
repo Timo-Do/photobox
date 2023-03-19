@@ -12,6 +12,7 @@
     {% if section["sectiontype"] == "rows" %}
     <section class="row-layout">
         {% for elem in section['elems'] %}
+        {% if elem is not none %}
             <!-- elem -->
             {% if elem['href'] is defined %}
             <a href="{{elem['href']}}">
@@ -24,15 +25,18 @@
                 {% endfor %}
                 </div>
             </a>
+        {% endif %}
         {% endfor %}
     </section>
     {% elif section['sectiontype'] == "tiles" %}
     <section class="tile-layout">
         {% for elem in section['elems'] %}
+        {% if elem is not none %}
         <div class="tile" style="{{elem['style']}}" onclick="{{elem['onclick']}}">
             <div class="center title">{{elem['title']}}</div>
             <div class="center subtitle">{{elem['subtitle']}}</div>
         </div>
+        {% endif %}
         {% endfor %}
     </section>
     {% endif %}
