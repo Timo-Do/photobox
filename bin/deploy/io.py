@@ -31,13 +31,15 @@ class OutputManager():
 
     def __init__(self):
         self.GPIOs["StatusLED"] = config["GPIOs"]["Status_LED"]
+        self.GPIOs["Shutter"] = config["GPIOs"]["Shutter"]
         self._blinking[self.GPIOs["StatusLED"]] = False
+        self.shutter_lock = threading.Lock()
 
     def _blink(self, gpio):
         self._blinking[gpio] = True
         while(self._blinking[gpio]):
             GPIO.output(gpio, not GPIO.input(gpio))
-            time.sleep(0.5)
+            time.sleep(0.2)
         GPIO.output(gpio, GPIO.LOW)
             
     def StatusLED(self, message):
@@ -48,6 +50,18 @@ class OutputManager():
                 thread.start()
         elif(message == "STOPBLINKING"):
             self._blinking[gpio] = False
+
+    def shutter(self):
+        if(self.shutter_lock.acquire(False)):
+            gpio = self.GPIOs["Shutter"]
+            logger.info("Shutter activated!")
+            GPIO.output(gpio, GPIO.HIGH)
+            time.sleep(0.1)
+            GPIO.output(gpio, GPIO.LOW)
+            time.sleep(3)
+            self.shutter_lock.release()
+            
+        
 
 
 logger = tools.get_logger("io")
@@ -76,6 +90,12 @@ if(config["io"]["Status_LED"]):
         lambda msg : output.StatusLED(msg),
         [config["GPIOs"]["Status_LED"]],
         topic = "STATUSLED")
+
+if(config["io"]["Shutter"]):
+    output_funcs["Shutter"] = Functionality(
+        lambda msg : output.shutter(),
+        [config["GPIOs"]["Shutter"]],
+        topic = "SHUTTER")
 
 
 
@@ -132,14 +152,3 @@ try:
         time.sleep(0.01)
 finally:
     GPIO.cleanup()
-
-
-# GPIO.setup(22, GPIO.OUT)
-# while True:
-
-#     if(int(time.time()) % 2 == 0):
-#         GPIO.output(22, GPIO.HIGH)
-#     else:
-#         GPIO.output(22, GPIO.LOW)
-
-#     time.sleep(0.2)
