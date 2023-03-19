@@ -24,6 +24,11 @@ def supervisor_get_process_info(proc = None):
         return server.supervisor.getAllProcessInfo()
     else:
         return server.supervisor.getProcessInfo(proc)
+    
+def supervisor_empty_log(proc):
+    server.supervisor.clearProcessLogs(proc)
+    return True
+
 
 def supervisor_get_process_log(name):
     try:
@@ -32,6 +37,24 @@ def supervisor_get_process_log(name):
         log = "Kein Log vorhanden!"
     log = log.replace("\n", "<br />")
     return log
+
+def supervisor_processcontrol(proc, cmd):
+    ret = run_bash(f"supervisorctl {cmd} {proc}")
+    ret = ret.split(": ")
+    if(ret[0].startswith(proc) and ret[1].startswith(cmd)):
+        return True
+    return False
+
+def get_wifi():
+    ret = run_bash("iw dev wlan0 station dump")
+    lines = ret.split("\n")
+    info = {}
+    for line in lines:
+        if(line.startswith("\t")):
+            line = line.replace("\t", "")
+            key, value = line.split(":")
+            info[key] = value.strip()
+    return info
 
 
 if __name__ == "__main__":
