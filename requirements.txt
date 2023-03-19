@@ -1,5 +1,6 @@
 opencv-python
-tflite
+tflite-runtime
 Flask
 requests
 RPi.GPIO
+imutils
