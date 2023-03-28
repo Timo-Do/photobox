@@ -22,6 +22,7 @@ PUB_SOCKET = "/tmp/PUB"
 ENCODING = "ascii"
 DELIMITER = ":"
 
+
 class Messenger():
     def __init__(self):
         self.publisher = context.socket(zmq.PUB)
@@ -45,11 +46,13 @@ class Messenger():
         while True:
             transmit = subscriber.recv()
             if(return_raw):
-                callback(transmit)
+                callback_thread = threading.Thread(target = callback, args=(transmit, ), daemon=True)
+                callback_thread.start()
             else:
                 transmit = transmit.decode(ENCODING)
                 delim_index = transmit.find(DELIMITER) + 1
-                callback(transmit[delim_index:])
+                callback_thread = threading.Thread(target = callback, args=(transmit[delim_index:], ), daemon=True)
+                callback_thread.start()
 
 
     def subscribe(self, topic, callback, channels = CHANNELS.ALL, return_raw = False):
