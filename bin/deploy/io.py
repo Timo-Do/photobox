@@ -8,6 +8,7 @@ import ipc
 import assets.config
 import assets.tools as tools
 
+GPIO.setmode(GPIO.BCM)
 
 class Functionality():
     enabled = True
@@ -44,21 +45,33 @@ class OutputManager():
             
     def StatusLED(self, message):
         gpio = self.GPIOs["StatusLED"]
-        if(message == "STARTBLINKING"):   
+        if(message == "STARTBLINKING"):
+            logger.debug("Status LED on")   
             if(not self._blinking[gpio]):
                 thread = threading.Thread(target = self._blink, args=(gpio, ), daemon = True)
                 thread.start()
         elif(message == "STOPBLINKING"):
             self._blinking[gpio] = False
+            logger.debug("Status LED off")
 
-    def shutter(self):
-        if(self.shutter_lock.acquire(False)):
+    def Countdown(self):
+        logger.info("Countdown activated")
+        time.sleep(3)
+
+    def shutter(self, msg):
+        if(msg == "NOW"):
+            countdown = False
+        else:
+            countdown = True
+
+        if(self.shutter_lock.acquire(countdown)):
+            if(countdown):
+                self.Countdown()
             gpio = self.GPIOs["Shutter"]
             logger.info("Shutter activated!")
-            GPIO.output(gpio, GPIO.HIGH)
-            time.sleep(0.1)
             GPIO.output(gpio, GPIO.LOW)
-            time.sleep(3)
+            time.sleep(.33)
+            GPIO.output(gpio, GPIO.HIGH)
             self.shutter_lock.release()
             
         
@@ -82,6 +95,11 @@ if(config["io"]["Shutdown"]):
         lambda : messenger.publish("SHUTDOWN", "Button"),
         [config["GPIOs"]["Shutdown_left"], config["GPIOs"]["Shutdown_right"]],
         ticks = 30)
+    
+if(config["io"]["Taster"]):
+    input_funcs["Taster"] = Functionality(
+        lambda : messenger.publish("SHUTTER", "COUNTDOWN"),
+        [config["GPIOs"]["Taster"]])
 
 output_funcs = {}
 
@@ -93,9 +111,10 @@ if(config["io"]["Status_LED"]):
 
 if(config["io"]["Shutter"]):
     output_funcs["Shutter"] = Functionality(
-        lambda msg : output.shutter(),
+        lambda msg : output.shutter(msg),
         [config["GPIOs"]["Shutter"]],
         topic = "SHUTTER")
+    
 
 
 
