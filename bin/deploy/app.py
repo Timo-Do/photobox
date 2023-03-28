@@ -65,6 +65,14 @@ def commands():
             "onclick"   : f"Exec('shutdown')",
             "title"     : "Bye!",
             "subtitle"  : "Fahre das System herunter."
+        },{
+            "onclick"   : f"Exec('startblink')",
+            "title"     : "Blinken an!",
+            "subtitle"  : "Lässt die Status LED blinken."
+        },{
+            "onclick"   : f"Exec('stopblink')",
+            "title"     : "Blinken aus!",
+            "subtitle"  : "Hört auf mit dem geblinke."
         }]
     }]
 
@@ -217,9 +225,13 @@ def publish(cmd):
     elif(cmd == "shutdown"):
         messenger.publish("SHUTDOWN", "Website")
     elif(cmd == "countdown"):
-        messenger.publish("COUNTDOWN")
+        messenger.publish("COUNTDOWN", "Website")
     elif(cmd == "shutter"):
-        messenger.publish("SHUTTER")
+        messenger.publish("SHUTTER", "NOW")
+    elif(cmd == "startblink"):
+        messenger.publish("STATUSLED", "STARTBLINKING")
+    elif(cmd == "stopblink"):
+        messenger.publish("STATUSLED", "STOPBLINKING")
     return ""
 
 
