@@ -29,6 +29,7 @@ config["io"]["Slideshow_Toggle"] = bool
 config["io"]["Shutdown"] = bool
 config["io"]["Shutter"] = bool
 config["io"]["Status_LED"] = bool
+config["io"]["Taster"] = bool
 
 config["GPIOs"] = {}
 config["GPIOs"]["Slideshow_Toggle"] = int
@@ -36,6 +37,15 @@ config["GPIOs"]["Shutdown_left"] = int
 config["GPIOs"]["Shutdown_right"] = int
 config["GPIOs"]["Shutter"] = int
 config["GPIOs"]["Status_LED"] = int
+config["GPIOs"]["Taster"] = int
+config["GPIOs"]["cd_o"] = int
+config["GPIOs"]["cd_ol"] = int
+config["GPIOs"]["cd_or"] = int
+config["GPIOs"]["cd_m"] = int
+config["GPIOs"]["cd_ul"] = int
+config["GPIOs"]["cd_ur"] = int
+config["GPIOs"]["cd_u"] = int
+
 config["SDCard"] = {}
 config["SDCard"]["Reaction_Time"] = float
 config["SDCard"]["MountPoint"] = str
