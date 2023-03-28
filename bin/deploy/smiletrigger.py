@@ -22,6 +22,9 @@ FACE_DETECTION_RES_W = 400
 FACE_DETECTION_RES_RATIO = 16/9
 FACE_DETECTION_RES_H = int(np.round(FACE_DETECTION_RES_W / FACE_DETECTION_RES_RATIO))
 
+# Anti Spam Gap
+SECONDS_BETWEEN_TRIGGERS = 3
+time_of_last_trigger = time.time()
 # Maximum Index to look for devices
 CAMERA_MAX_IDX = 10
 # Face Resolution (model dependent!)
@@ -162,7 +165,8 @@ while(bRun):
             faces = num_faces,
             smiles = num_smiles), end="\r")
         
-    if(num_faces > 0 and num_smiles/num_faces >= 0.5):
-        messenger.publish("SHUTTER", "SMILETRIGGER")
-
+    if(num_faces > 0 and num_smiles/num_faces >= 0.5 and
+       time.time() > time_of_last_trigger + SECONDS_BETWEEN_TRIGGERS):
+        messenger.publish("SHUTTER", "NOW")
+        time_of_last_trigger = time.time()
 # ---
