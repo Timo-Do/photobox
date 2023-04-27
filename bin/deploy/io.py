@@ -54,9 +54,31 @@ class OutputManager():
             self._blinking[gpio] = False
             logger.debug("Status LED off")
 
-    def Countdown(self):
+    def _display(self, symbol):
+        segments = ["o", "ol", "or", "m", "ul", "ur", "u"]
+        on = []
+        if(symbol == 1):
+            on = ["or", "ur"]
+        elif(symbol == 2):
+            on = ["o", "or", "m", "ul", "u"]
+        elif(symbol == 3):
+            on = ["o", "or", "m", "ur", "u"]
+        else:
+            raise ValueError("Invalid symbol given.")
+        
+        for segment in segments:
+            # Watch out: Inverse Logic!
+            state = GPIO.HIGH
+            if(segment in on):
+                state = GPIO.LOW
+            GPIO.output(config["GPIOs"][f"cd_{segment}"], state)
+
+    def Countdown(self, start):
         logger.info("Countdown activated")
-        time.sleep(3)
+        for i in range(start):
+            self._display(start - i)
+            time.sleep(1)
+        
 
     def shutter(self, msg):
         if(msg == "NOW"):
