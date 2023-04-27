@@ -64,7 +64,7 @@ class OutputManager():
         else:
             countdown = True
 
-        if(self.shutter_lock.acquire(countdown)):
+        if(self.shutter_lock.acquire(False)):
             if(countdown):
                 self.Countdown()
             gpio = self.GPIOs["Shutter"]
