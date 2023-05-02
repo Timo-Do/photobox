@@ -14,6 +14,7 @@ class Functionality():
     enabled = True
     ticks = 10
     topic = None
+    init = True
 
     def __init__(self, action, GPIOs, **kwargs):
         self.__dict__.update(kwargs)
@@ -196,8 +197,12 @@ try:
         # Inputs
         for name, func in input_funcs.items():
             if(func.enabled and all(input_state[gpio] > func.ticks for gpio in func.GPIOs)):
-                logger.info("{n} triggered.".format(n = name))
-                func.action()
+                if(func.init):
+                    logger.info("{n} init passed.".format(n = name))
+                    func.init = False
+                else:
+                    logger.info("{n} triggered.".format(n = name))
+                    func.action()
                 func.disable()
             elif(not func.enabled and all(input_state[gpio] == 0 for gpio in func.GPIOs)):
                 logger.debug("Resetting {n}.".format(n = name))
