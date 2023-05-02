@@ -63,9 +63,10 @@ class OutputManager():
             on = ["o", "or", "m", "ul", "u"]
         elif(symbol == 3):
             on = ["o", "or", "m", "ur", "u"]
+        elif(symbol == None):
+            pass
         else:
             raise ValueError("Invalid symbol given.")
-        
         for segment in segments:
             # Watch out: Inverse Logic!
             state = GPIO.HIGH
@@ -78,7 +79,7 @@ class OutputManager():
         for i in range(start):
             self._display(start - i)
             time.sleep(1)
-        
+        self._display(None)
 
     def shutter(self, msg):
         if(msg == "NOW"):
@@ -88,7 +89,7 @@ class OutputManager():
 
         if(self.shutter_lock.acquire(False)):
             if(countdown):
-                self.Countdown()
+                self.Countdown(3)
             gpio = self.GPIOs["Shutter"]
             logger.info("Shutter activated!")
             GPIO.output(gpio, GPIO.LOW)
@@ -136,7 +137,20 @@ if(config["io"]["Shutter"]):
         lambda msg : output.shutter(msg),
         [config["GPIOs"]["Shutter"]],
         topic = "SHUTTER")
-    
+
+if(config["io"]["Countdown"]):
+	output_funcs["Countdown"] = Functionality(
+	lambda msg : output.shutter(msg),
+	[
+		config["GPIOs"]["cd_o"],
+		config["GPIOs"]["cd_ol"],
+		config["GPIOs"]["cd_or"],
+		config["GPIOs"]["cd_m"],
+		config["GPIOs"]["cd_ul"],
+		config["GPIOs"]["cd_ur"],
+		config["GPIOs"]["cd_u"]
+	],
+	topic = "SHUTTER")
 
 
 

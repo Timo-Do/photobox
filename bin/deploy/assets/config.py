@@ -30,6 +30,7 @@ config["io"]["Shutdown"] = bool
 config["io"]["Shutter"] = bool
 config["io"]["Status_LED"] = bool
 config["io"]["Taster"] = bool
+config["io"]["Countdown"] = bool
 
 config["GPIOs"] = {}
 config["GPIOs"]["Slideshow_Toggle"] = int
