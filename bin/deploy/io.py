@@ -47,13 +47,17 @@ class OutputManager():
     def StatusLED(self, message):
         gpio = self.GPIOs["StatusLED"]
         if(message == "STARTBLINKING"):
-            logger.debug("Status LED on")   
+            logger.debug("Status LED blinking on")   
             if(not self._blinking[gpio]):
                 thread = threading.Thread(target = self._blink, args=(gpio, ), daemon = True)
                 thread.start()
         elif(message == "STOPBLINKING"):
             self._blinking[gpio] = False
+            logger.debug("Status LED blinking off")
+            GPIO.output(gpio, GPIO.HIGH)
+        elif(message == "STOP"):
             logger.debug("Status LED off")
+            GPIO.output(gpio, GPIO.LOW)
 
     def _display(self, symbol):
         segments = ["o", "ol", "or", "m", "ul", "ur", "u"]

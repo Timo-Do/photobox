@@ -5,7 +5,10 @@ import shutil
 
 logger = tools.get_logger("CONFIG")
 
-PATH = os.environ["PWFB_CONFIG"]
+if("PWFB_CONFIG" in os.environ):
+    PATH = os.environ["PWFB_CONFIG"]
+else:
+    PATH = os.path.join("/", "home", "pi", "photobox", "CONFIG")
 
 bool2str = {
     True  : "yes",

@@ -2,9 +2,11 @@
 import flask
 import ipc
 import secretary
-import datetime
+import threading
 from assets import tools
+import assets.config
 
+config = assets.config.load()
 messenger = ipc.Messenger()
 app = flask.Flask(__name__, template_folder="www/templateFiles", static_folder="www/staticFiles")
 
@@ -16,7 +18,7 @@ STATE_COLORS = {
 
 @app.route("/")
 def index():
-    title = "...."
+    title = config["Basic"]["Name"]
     rows = [{
         "text"  : "Befehle",
         "url"   : "commands"
@@ -66,13 +68,9 @@ def commands():
             "title"     : "Bye!",
             "subtitle"  : "Fahre das System herunter."
         },{
-            "onclick"   : f"Exec('startblink')",
-            "title"     : "Blinken an!",
-            "subtitle"  : "Lässt die Status LED blinken."
-        },{
-            "onclick"   : f"Exec('stopblink')",
-            "title"     : "Blinken aus!",
-            "subtitle"  : "Hört auf mit dem geblinke."
+            "onclick"   : f"Exec('umntusb')",
+            "title"     : "Rauswerfen!",
+            "subtitle"  : "USB Stick sicher entfernen."
         }]
     }]
 
@@ -225,13 +223,11 @@ def publish(cmd):
     elif(cmd == "shutdown"):
         messenger.publish("SHUTDOWN", "Website")
     elif(cmd == "countdown"):
-        messenger.publish("COUNTDOWN", "Website")
+        messenger.publish("SHUTTER", "COUNTDOWN")
     elif(cmd == "shutter"):
         messenger.publish("SHUTTER", "NOW")
-    elif(cmd == "startblink"):
-        messenger.publish("STATUSLED", "STARTBLINKING")
-    elif(cmd == "stopblink"):
-        messenger.publish("STATUSLED", "STOPBLINKING")
+    elif(cmd == "umntusb"):
+        messenger.publish("UMNTUSB", "Website")
     return ""
 
 

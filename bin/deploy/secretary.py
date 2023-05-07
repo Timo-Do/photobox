@@ -4,11 +4,15 @@ import ipc
 import subprocess
 from multicast import get_ip
 import assets.tools
+import assets.config
 import time
 from xmlrpc.client import ServerProxy
 
 logger = assets.tools.get_logger("HOUSEKEEPING")
 server = ServerProxy("http://localhost:9001/RPC2")
+msg = ipc.Messenger()
+config = assets.config.load()
+
 
 def run_bash(cmd):
     process = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE)
@@ -18,6 +22,17 @@ def run_bash(cmd):
 def shutdown():
     #run_bash("sudo shutdown now")
     logger.error("Shutdown deactivated ... for now")
+
+def umntusbtop(payload):
+    print("Start blinking")
+    msg.publish("STATUSLED", "STARTBLINKING", ipc.CHANNELS.LOCAL)
+    run_bash("/home/pi/photobox/bin/deploy/umntusbtop")
+    print("Stop blinking")
+    msg.publish("STATUSLED", "STOPBLINKING", ipc.CHANNELS.LOCAL)
+    while(run_bash("ls -l /dev/usbtop") != 0):
+        time.sleep(0.1)
+    msg.publish("STATUSLED", "STOP", ipc.CHANNELS.LOCAL)
+    print("LED OFF")
 
 def supervisor_get_process_info(proc = None):
     if(proc is None):
@@ -58,4 +73,7 @@ def get_wifi():
 
 
 if __name__ == "__main__":
-    print(supervisor_get_process_log("multicast"))
+    msg.subscribe("UMNTUSB",umntusbtop)
+    hostname = config["Basic"]["Name"]
+    while(True):
+        time.sleep(1)
