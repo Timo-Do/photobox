@@ -57,7 +57,7 @@ face_detection = YuNet(
     targetId = cv2.dnn.DNN_TARGET_CPU)
 logger.debug("Loaded YuNet for Face Detection successfully")
 # Smile evaluation
-modelPath = os.path.join(DIR, "assets", "model_32_lite")
+modelPath = os.path.join(DIR, "assets", "redone.tflite")
 smile_evaluation = tflite.Interpreter(model_path = modelPath)
 smile_evaluation_input_details = smile_evaluation.get_input_details()
 smile_evaluation_output_details = smile_evaluation.get_output_details()
