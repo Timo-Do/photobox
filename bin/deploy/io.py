@@ -15,7 +15,7 @@ class Functionality():
     ticks = 10
     topic = None
     init = True
-
+    default = GPIO.LOW
     def __init__(self, action, GPIOs, **kwargs):
         self.__dict__.update(kwargs)
         self.GPIOs = GPIOs
@@ -98,7 +98,7 @@ class OutputManager():
             gpio = self.GPIOs["Shutter"]
             logger.info("Shutter activated!")
             GPIO.output(gpio, GPIO.LOW)
-            time.sleep(.33)
+            time.sleep(.45)
             GPIO.output(gpio, GPIO.HIGH)
             self.shutter_lock.release()
             
@@ -141,7 +141,7 @@ if(config["io"]["Shutter"]):
     output_funcs["Shutter"] = Functionality(
         lambda msg : output.shutter(msg),
         [config["GPIOs"]["Shutter"]],
-        topic = "SHUTTER")
+        topic = "SHUTTER", default = GPIO.HIGH)
 
 if(config["io"]["Countdown"]):
 	output_funcs["Countdown"] = Functionality(
@@ -155,7 +155,7 @@ if(config["io"]["Countdown"]):
 		config["GPIOs"]["cd_ur"],
 		config["GPIOs"]["cd_u"]
 	],
-	topic = "SHUTTER")
+	topic = "SHUTTER", default = GPIO.HIGH)
 
 
 
@@ -191,6 +191,11 @@ try:
     for name, func in output_funcs.items():
         messenger.subscribe(func.topic, func.action)
     # Main Loop
+    for name, func in output_funcs.items():
+        for gpio in func.GPIOs:
+            logger.debug(f"Setting GPIO {gpio} to {func.default}")
+            GPIO.output(gpio, func.default)
+
     while(True):
         for gpio in gpios_in:
             if(GPIO.input(gpio)):
